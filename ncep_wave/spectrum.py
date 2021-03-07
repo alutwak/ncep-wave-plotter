@@ -3,6 +3,8 @@ import time
 
 import numpy as np
 
+import ncep_wave.terminal as term
+
 # '<Field ID>' <n freqs> <n dirs> <n points> '<grid name>'
 #
 # Indent 1: <freqs (Hz)> X nfreqs
@@ -68,7 +70,7 @@ class Spectrum:
             return 4 * np.sqrt(E)
 
     def __init__(self, fspec_path):
-        print(f"Parsing data in {fspec_path}")
+        term.message(f"Parsing data in {fspec_path}")
 
         self._df = None
 
@@ -81,7 +83,6 @@ class Spectrum:
         if self._df is None:
             df = self.freqs[1:]/self.freqs[:-1]
             self._df = np.append(df, df[-1])
-            print(f"{self._df}")
         return self._df
 
     def parse_header(self, fspec):

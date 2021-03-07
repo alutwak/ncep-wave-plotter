@@ -6,6 +6,7 @@ import socket
 from ftplib import FTP_TLS
 import tarfile
 
+import ncep_wave.terminal as term
 
 NCEP_SERVER = "ftpprd.ncep.noaa.gov"
 PRODUCT_PATH = "/pub/data/nccf/com/wave/prod"
@@ -15,7 +16,7 @@ DEFAULT_CACHE = os.path.expanduser("~/.cache/ncep-wave/")
 class NCEPWaveDataFetcher:
 
     def __init__(self, ntries=None):
-        print("Connecting to the ncep ftp server...")
+        term.message("Connecting to the ncep ftp server...")
         tries = 0
         while True:
             try:
@@ -25,14 +26,14 @@ class NCEPWaveDataFetcher:
                 msg = f"Connection try {tries + 1} failed."
                 if ntries is not None:
                     if tries >= ntries:
-                        print(f"Unable to connect to ncep ftp server: {e}")
+                        term.message(f"Unable to connect to ncep ftp server: {e}")
                         sys.exit(1)
                     else:
                         msg += " Trying again..."
-                        tries += 1
-                print(msg)
+                tries += 1
+                term.message(msg)
 
-        print("Connected.")
+        term.message("Connected.")
         self.ftp.login(secure=False)
         self.ftp.cwd(PRODUCT_PATH)
 
@@ -79,17 +80,17 @@ class NCEPWaveDataFetcher:
 
         # If the output path already exists then we're done
         if os.path.exists(output_path):
-            print(f"Found latest enp spectral run: {output_path}")
+            term.message(f"Found latest enp spectral run: {output_path}")
             return output_path
 
         # We need the data, so download it
-        print(f"Downloading latest enp spectral run to {output_tar}")
+        term.message(f"Downloading latest enp spectral run to {output_tar}")
         os.makedirs(os.path.dirname(output_tar), exist_ok=True)
         with open(output_tar, "wb") as f:
             self.ftp.retrbinary(f"RETR {target_tar}", f.write, 1024)
 
         # Now extract the tar file
-        print(f"Extracting {output_tar} to {output_path}")
+        term.message(f"Extracting {output_tar} to {output_path}")
         tf = tarfile.open(output_tar)
         tf.extractall(output_path)
         tf.close()

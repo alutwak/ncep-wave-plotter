@@ -4,10 +4,11 @@ import time
 import numpy as np
 import matplotlib.pyplot as plt
 
+import ncep_wave.terminal as term
+
 
 def plot_record(record, outdir="."):
     localtime = time.localtime(record.rtime)
-    print(f"Plotting spectrum for {time.strftime('%Y-%m-%d %H', localtime)}")
 
     dirs = np.flip(np.append(record.dirs, record.dirs[0]) - np.pi/2)
     periods = record.freqs
@@ -28,6 +29,7 @@ def plot_record(record, outdir="."):
     ax.set_rlabel_position(ax.get_rlabel_position() + 245)  # Move the tics out of the way
     ax.tick_params(labelcolor="white")
     ticks = ax.get_yticks()
+    ax.set_yticks(ticks)
     ax.set_yticklabels([f"{1/f:0.1f}" for f in ticks])
     cs1 = ax.contourf(theta, r, data, levels, colors=colors, extend="both")
     cs1.cmap.set_under("#0000cd")
@@ -53,3 +55,5 @@ def plot_record(record, outdir="."):
     outpath = os.path.join(outdir, f"{pathtime}.spec.png")
     plt.savefig(outpath)
     plt.close(fig)
+
+    term.info(outpath)

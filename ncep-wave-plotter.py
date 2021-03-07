@@ -3,6 +3,7 @@ import os
 import argparse
 
 from ncep_wave.forecast import make_forcast
+import ncep_wave.terminal as term
 
 
 def main():
@@ -16,8 +17,8 @@ def main():
     outdir = os.path.expanduser(args.outdir)
 
     if args.action == "forecast":
-        print("Generating forecast")
-        forecast_dir = os.path.join(outdir, "forecast", time.strftime("%Y-%m-%d"))
+        term.message("Generating forecast")
+        forecast_dir = os.path.join(outdir, "forecast", time.strftime("%Y-%m-%d"), args.station)
         make_forcast(args.station, forecast_dir)
 
 
