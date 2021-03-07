@@ -34,7 +34,6 @@ def plot_record(record, outdir="."):
     cs1 = ax.contourf(theta, r, data, levels, colors=colors, extend="both")
     cs1.cmap.set_under("#0000cd")
     cs1.cmap.set_over("#ff00ff")
-    fig.colorbar(cs1)
 
     # Plot contours
     ax.contour(theta, r, data, levels, colors=("k",), linewidths=(1,))
