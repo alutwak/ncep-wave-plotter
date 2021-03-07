@@ -42,7 +42,6 @@ def plot_record(record, outdir="."):
     wind_dir_rad = np.pi * (90 - record.UD) / 180
     wind_u = -record.UA * np.cos(wind_dir_rad)
     wind_v = -record.UA * np.sin(wind_dir_rad)
-    print(f"{wind_u}, {wind_v}")
     ax.quiver(0, 0, [wind_u], [wind_v], color=['r'], scale=140/2.237)  # 140 (10m/s/tick) * 2.237 (mph/m/s)
 
     # Set title

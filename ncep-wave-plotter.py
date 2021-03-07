@@ -2,7 +2,7 @@ import time
 import os
 import argparse
 
-from forecast import make_forcast
+from ncep_wave.forecast import make_forcast
 
 
 def main():

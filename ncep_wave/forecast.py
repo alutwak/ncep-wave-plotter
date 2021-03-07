@@ -1,8 +1,8 @@
 import os
 
-from data import fetch_latest_enp_data
-from spectrum import Spectrum
-from plotter import plot_record
+from .data import fetch_latest_enp_data
+from .spectrum import Spectrum
+from .plotter import plot_record
 
 
 def make_forcast(station, outdir):
