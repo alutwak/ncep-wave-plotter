@@ -36,7 +36,7 @@ class Spectrum:
 
     class Record:
 
-        def __init__(self, rtime, pid, lat, lon, d, UA, UD, crnt, crnt_dir, freqs, dirs):
+        def __init__(self, rtime, pid, lat, lon, d, UA, UD, crnt, crnt_dir, freqs, dfreqs, dirs):
             self.rtime = rtime
             self.lat = lat
             self.lon = lon
@@ -46,6 +46,7 @@ class Spectrum:
             self.current = crnt
             self.crnt_dir = crnt_dir
             self.freqs = freqs
+            self.dfreqs = dfreqs
             self.dirs = dirs
             self.data = None
 
@@ -59,18 +60,29 @@ class Spectrum:
             dir_int = self.data.sum(axis=0) * 2*np.pi/len(self.dirs)
 
             # Bandwidths for the frequency bands
-            df = 0.5 * (1.1 - 1/1.1) * self.freqs
-            df[-1] *= 0.5
+            bw = 0.5 * (self.dfreqs - 1/self.dfreqs) * self.freqs
+            bw[-1] *= 0.5
             tailf = 0.25 * self.freqs[-1]
 
-            E = np.dot(dir_int, df).sum() + tailf * dir_int[-1]
+            E = np.dot(dir_int, bw) + tailf * dir_int[-1]
             return 4 * np.sqrt(E)
 
     def __init__(self, fspec_path):
         print(f"Parsing data in {fspec_path}")
+
+        self._df = None
+
         with open(fspec_path) as fspec:
             self.parse_header(fspec)
             self.parse_data(fspec)
+
+    @property
+    def df(self):
+        if self._df is None:
+            df = self.freqs[1:]/self.freqs[:-1]
+            self._df = np.append(df, df[-1])
+            print(f"{self._df}")
+        return self._df
 
     def parse_header(self, fspec):
         line = fspec.readline().strip()
@@ -117,7 +129,7 @@ class Spectrum:
         if not m:
             raise ValueError(f"Bad record header: {rsum}")
         params = [float(val) for val in m.groups()]
-        record = Spectrum.Record(rtime, *params, self.freqs, self.dirs)
+        record = Spectrum.Record(rtime, *params, self.freqs, self.df, self.dirs)
 
         data = []
         while indent(fspec) == 2:

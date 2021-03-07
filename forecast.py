@@ -1,7 +1,7 @@
 import os
 
 from data import fetch_latest_enp_data
-from parser import Spectrum
+from spectrum import Spectrum
 from plotter import plot_record
 
 
