@@ -1,0 +1,16 @@
+<!doctype html>
+<title>{{ station }} Forecast</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<head>
+  <script src="{{ url_for('static', filename='spectrum.js') }}"></script>
+</head>
+<body>
+  <div>
+    <img id="spectrum" />
+</div>
+
+<script>
+  let player = new ForecastPlayer({{ station }}, "spectrum");
+  player.fetchForecasts().then(() => player.playForecast());
+</script>
+</body>
