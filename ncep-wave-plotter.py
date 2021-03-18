@@ -1,8 +1,8 @@
-import time
 import os
 import argparse
 
 from ncep_wave.forecast import make_forcast
+from ncep_wave.cache import make_forecast_path, DEFAULT_IMAGE_CACHE
 import ncep_wave.terminal as term
 
 
@@ -10,7 +10,7 @@ def main():
     parser = argparse.ArgumentParser("A tool for producing plots from ncep wave data")
     parser.add_argument("action", choices=["forecast"], help="Plot a forecast")
     parser.add_argument("station")
-    parser.add_argument("-o", "--outdir", default="~/ncep-wave", help="Output directory")
+    parser.add_argument("-o", "--outdir", default=DEFAULT_IMAGE_CACHE, help="Output directory")
 
     args = parser.parse_args()
 
@@ -18,7 +18,7 @@ def main():
 
     if args.action == "forecast":
         term.message("Generating forecast")
-        forecast_dir = os.path.join(outdir, "forecast", time.strftime("%Y-%m-%d"), args.station)
+        forecast_dir = make_forecast_path(args.station, outdir)
         make_forcast(args.station, forecast_dir)
 
 

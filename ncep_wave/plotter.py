@@ -5,6 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 import ncep_wave.terminal as term
+from .cache import create_spectrum_path
 
 
 def plot_record(record, outdir="."):
@@ -53,8 +54,7 @@ def plot_record(record, outdir="."):
     ax.set_title(f"{date}      Hs = {record.hs:0.2f}m")
 
     # Save and close figure
-    pathtime = time.strftime("%Y%m%d%H", localtime)
-    outpath = os.path.join(outdir, f"{pathtime}.spec.png")
+    outpath = create_spectrum_path(outdir, localtime)
     plt.savefig(outpath)
     plt.close(fig)
 

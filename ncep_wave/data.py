@@ -7,10 +7,10 @@ from ftplib import FTP_TLS
 import tarfile
 
 import ncep_wave.terminal as term
+from .cache import DEFAULT_CACHE
 
 NCEP_SERVER = "ftpprd.ncep.noaa.gov"
 PRODUCT_PATH = "/pub/data/nccf/com/wave/prod"
-DEFAULT_CACHE = os.path.expanduser("~/.cache/ncep-wave/")
 
 
 class NCEPWaveDataFetcher:
@@ -62,12 +62,18 @@ class NCEPWaveDataFetcher:
         return enp_specs
 
     def latest_enp(self):
-        latest = self.multi_dirs[-1]
-        enps = self.enpSpecRuns(latest)
-        run_times = list(enps.keys())
-        run_times.sort()
+        # Sometimes a multi dir exists, but is empty.
+        # We find that last non-empty directory
+        for mdir in self.multi_dirs[::-1]:
+            enps = self.enpSpecRuns(mdir)
+            if not enps:  # empty mdir
+                continue
 
-        return enps[run_times[-1]]
+            # Find the latest run time
+            run_times = list(enps.keys())
+            run_times.sort()
+
+            return enps[run_times[-1]]
 
     def fetch_latest_enp(self, cache=None):
         if cache is None:
