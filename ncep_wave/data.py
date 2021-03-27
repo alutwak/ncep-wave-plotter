@@ -1,7 +1,7 @@
 import os
 import sys
-import re
 import socket
+import enum
 
 from ftplib import FTP_TLS
 import tarfile
@@ -10,7 +10,12 @@ import ncep_wave.terminal as term
 from .cache import DEFAULT_CACHE
 
 NCEP_SERVER = "ftpprd.ncep.noaa.gov"
-PRODUCT_PATH = "/pub/data/nccf/com/wave/prod"
+PRODUCT_PATH = "/pub/data/nccf/com/gfs/prod"
+
+
+class STATION_FILE(enum.Enum):
+    SPECTRAL = "spec_tar.gz"
+    BULLETIN = "bull_tar"
 
 
 class NCEPWaveDataFetcher:
@@ -47,50 +52,60 @@ class NCEPWaveDataFetcher:
         pass
 
     @property
-    def multi_dirs(self):
-        return [f for f in self.ftp.nlst() if "multi" in f]
+    def gfs_dirs(self):
+        return [f for f in self.ftp.nlst() if "gfs." in f]
 
-    def enpSpecRuns(self, multi_dir):
-        """ Returns a dictionary of available enp spectral runs available in the given multi dirs, keyed by the run time
+    def gfs_runs(self, gfs_dir):
+        """ Returns a dictionary of available gfs runs available in the given gfs dir.
+
+        These are all '00', '06', '12', or '18'
         """
-        enp_re = r"multi.+/enp.t(\d\d)z.spec_tar.gz"
-        enp_specs = {}
-        for f in self.ftp.nlst(multi_dir):
-            m = re.fullmatch(enp_re, f)
-            if m:
-                enp_specs[m.group(1)] = f
-        return enp_specs
+        return self.ftp.nlst(gfs_dir)
 
-    def latest_enp(self):
-        # Sometimes a multi dir exists, but is empty.
-        # We find that last non-empty directory
-        for mdir in self.multi_dirs[::-1]:
-            enps = self.enpSpecRuns(mdir)
-            if not enps:  # empty mdir
+    def gfs_station_files(self, gfs_run):
+        station_dir = gfs_run + "/wave/station/"
+        return self.ftp.nlst(station_dir)
+
+    def latest_run(self):
+        for gdir in self.gfs_dirs[::-1]:
+            runs = self.gfs_runs(gdir)
+            if not runs:  # empty mdir
                 continue
 
-            # Find the latest run time
-            run_times = list(enps.keys())
-            run_times.sort()
+            return sorted(runs)[-1]
 
-            return enps[run_times[-1]]
+    def latest_station_file(self, file_type):
+        # Iterate from the end
+        for gdir in self.gfs_dirs[::-1]:
+            for run in self.gfs_runs(gdir)[::-1]:
+                sfiles = self.gfs_station_files(run)
+                for f in sfiles:
+                    if file_type.value in f:
+                        return f
+        return None
 
-    def fetch_latest_enp(self, cache=None):
+    def latest_spectrals(self):
+        return self.latest_station_file(STATION_FILE.SPECTRAL)
+
+    def fetch_latest_spectrals(self, cache=None):
         if cache is None:
             cache = DEFAULT_CACHE
 
         # Get the target data, the output dirname and the output path
-        target_tar = self.latest_enp()
+        target_tar = self.latest_spectrals()
+        if target_tar is None:
+            term.message("Failed to get the latest spectrals")
+            return None
         output_tar = os.path.join(cache, target_tar)
         output_path, _ = os.path.splitext(output_tar)
 
         # If the output path already exists then we're done
         if os.path.exists(output_path):
-            term.message(f"Found latest enp spectral run: {output_path}")
+            term.message(f"Found latest spectral run: {output_path}")
             return output_path
 
         # We need the data, so download it
-        term.message(f"Downloading latest enp spectral run to {output_tar}")
+        term.message(f"Downloading latest spectral run to {output_tar}")
         os.makedirs(os.path.dirname(output_tar), exist_ok=True)
         with open(output_tar, "wb") as f:
             self.ftp.retrbinary(f"RETR {target_tar}", f.write, 1024)
@@ -104,6 +119,6 @@ class NCEPWaveDataFetcher:
         return output_path
 
 
-def fetch_latest_enp_data(cache=None):
+def fetch_latest_spectral_data(cache=None):
     with NCEPWaveDataFetcher() as wdf:
-        return wdf.fetch_latest_enp(cache)
+        return wdf.fetch_latest_spectrals(cache)
