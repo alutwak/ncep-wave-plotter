@@ -3,37 +3,44 @@
  */
 class ForecastPlayer {
 
-    constructor(station, image_id) {
+    constructor(station) {
         this.station = station;
-        this.image_elem = document.getElementById(image_id);
+        this.forecasts = {};
+        this.forecast_times = undefined;
+        this.play = false;
     }
 
     /* Returns the latest forecast times
      */ 
     async getLatestForecastTimes() {
-        const response = await fetch(`/latest/${this.station}`);
-        let times = "Error";
-        if (response.ok) {
-            times = await response.json();
+        if (this.forecast_times === undefined) {
+            const response = await fetch(`/latest/${this.station}`);
+            let times = "Error";
+            if (response.ok) {
+                times = await response.json();
+            }
+            this.forecast_times = times[this.station];
         }
-        this.forecast_times = times[this.station];
+        return this.forecast_times;
     }
 
     /* Gets the forecast image for the given forecast time
      */
     async getForecast(fc_time) {
-        const response = await fetch(`/forecast/${this.station}/${fc_time}`);
-        let image;
-        if (response.ok) {
-            image = await response.blob();
+        if (!(fc_time in this.forecasts)) {
+            const response = await fetch(`/forecast/${this.station}/${fc_time}`);
+            
+            if (response.ok) {
+                this.forecasts[fc_time] = await response.blob();
+            }
         }
-        return image;
+        return this.forecasts[fc_time];
     }
 
     /* Fetches all of the forecast times and images and caches them
      */
     async fetchForecasts() {
-        return this.getLatestForecastTimes().then(
+        this.getLatestForecastTimes().then(
             async () => {
                 let forecasts = {};
                 for (let fc_time of this.forecast_times) {
@@ -41,36 +48,27 @@ class ForecastPlayer {
                     forecasts[fc_time] = image;
                 }
                 this.forecasts = forecasts; // Really not sure why this can't be defined directly
-        });
+            });
     }
 
     /* Plays all of the forecasts in a loop
      * 
      * \param image_id The id for the image element
      */
-    playForecast() {
-
-        /* Generator to continuously loop over the forecast images
-         * I kinda doubt this is necessary, we can probably just do the loop without a generator, but I'd need to play
-         * with it to know for sure.
-         */ 
-        async function* forecastLoop(forecast_times, forecasts) {
-            let i = 0;
-            while (true) {
-                let t = forecast_times[i];
-                yield forecasts[t];
-                i = (i + 1) % forecast_times.length;
-                await new Promise(resolve => setTimeout(resolve, 1000));
-            }
+    async playForecast(image_id, date_id) {
+        let image_elem = document.getElementById(image_id);
+        this.play = true;
+        let i = 0;
+        let fctimes = await this.getLatestForecastTimes();
+        console.log(`Hey, we got ${fctimes}`);
+        while (this.play) {
+            let fct = fctimes[i];
+            let image = await this.getForecast(fct);
+            image_elem.src = window.URL.createObjectURL(image);
+            i = (i + 1) % fctimes.length;
+            console.log(i);
+            await new Promise(resolve => setTimeout(resolve, 100));
         }
-
-        // Actually performs the loop
-        (async () => {
-            let loop = forecastLoop(this.forecast_times, this.forecasts);
-            for await (let image of loop) {
-                this.image_elem.src = window.URL.createObjectURL(image)
-            }
-        })();
     }
 
 }
