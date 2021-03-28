@@ -2,14 +2,20 @@
 <title>{{ station }} Forecast</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 <head>
+<style>
+h1 {text-align: center;}
+p {text-align: center;}
+div {text-align: center;}
+</style>
   <script src="{{ url_for('static', filename='spectrum.js') }}"></script>
   <script>   
     let player = new ForecastPlayer({{ station }});
   </script>
 </head>
 <body>
-  <div>
-    <img id="spectrum" />
+<div>
+  <h1 id="date"> Date </h1>
+  <img id="spectrum" />
 </div>
 
 <script>

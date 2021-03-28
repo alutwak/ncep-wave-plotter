@@ -57,12 +57,19 @@ class ForecastPlayer {
      */
     async playForecast(image_id, date_id) {
         let image_elem = document.getElementById(image_id);
+        let date_elem = document.getElementById(date_id);
         this.play = true;
         let i = 0;
         let fctimes = await this.getLatestForecastTimes();
         console.log(`Hey, we got ${fctimes}`);
         while (this.play) {
             let fct = fctimes[i];
+            let y = parseInt(fct.slice(0, 4));
+            let m = parseInt(fct.slice(4, 6)) - 1;
+            let d = parseInt(fct.slice(6, 8));
+            let h = parseInt(fct.slice(8));
+            let date = new Date(y, m, d, h);
+            date_elem.innerText = date.toString();
             let image = await this.getForecast(fct);
             image_elem.src = window.URL.createObjectURL(image);
             i = (i + 1) % fctimes.length;
