@@ -61,7 +61,6 @@ class ForecastPlayer {
         this.play = true;
         let i = 0;
         let fctimes = await this.getLatestForecastTimes();
-        console.log(`Hey, we got ${fctimes}`);
         while (this.play) {
             let fct = fctimes[i];
             let y = parseInt(fct.slice(0, 4));
@@ -73,7 +72,6 @@ class ForecastPlayer {
             let image = await this.getForecast(fct);
             image_elem.src = window.URL.createObjectURL(image);
             i = (i + 1) % fctimes.length;
-            console.log(i);
             await new Promise(resolve => setTimeout(resolve, 100));
         }
     }
