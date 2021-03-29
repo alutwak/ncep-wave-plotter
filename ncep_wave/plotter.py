@@ -1,3 +1,4 @@
+from io import BytesIO
 import time
 
 import numpy as np
@@ -7,7 +8,13 @@ import ncep_wave.terminal as term
 from .cache import create_spectrum_path
 
 
-def plot_record(record, outdir="."):
+def write_hs_into_png(pngdata, hs):
+    hs = np.array([hs]).view(dtype=np.uint8)
+    tEXt = pngdata.getvalue().find(b"tEXt") + 4
+    pngdata.getbuffer()[tEXt:tEXt + 8] = hs.tobytes()
+
+
+def plot_record(record, outdir=".", for_web=True):
     localtime = time.localtime(record.rtime)
 
     dirs = np.flip(np.append(record.dirs, record.dirs[0]) - np.pi/2)
@@ -21,7 +28,7 @@ def plot_record(record, outdir="."):
               "#ff9900", "#ff6600", "#ff0000", "#b03060", "#d02090")
 
     # Create Axis and Figure
-    fig, ax = plt.subplots(figsize=(10, 10), subplot_kw=dict(projection='polar'))
+    fig, ax = plt.subplots(figsize=(6, 6), subplot_kw=dict(projection='polar'))
     ax.set_rlim(0, 0.35)
     ax.set_thetalim(2*np.pi, 0)
 
@@ -49,12 +56,21 @@ def plot_record(record, outdir="."):
               scale=140/2.237)  # 140 (10m/s/tick) * 2.237 (mph/m/s)
 
     # Set title
-    date = time.strftime("%Y/%m/%d %H%z", localtime)
-    ax.set_title(f"{date}      Hs = {record.hs:0.2f}m")
+    if for_web:
+        plt.tight_layout()
+    else:
+        date = time.strftime("%Y/%m/%d %H%z", localtime)
+        ax.set_title(f"{date}      Hs = {record.hs:0.2f}m")
+
+    # Generate the png data
+    png = BytesIO()
+    plt.savefig(png, format="png")
+    write_hs_into_png(png, record.hs)
 
     # Save and close figure
     outpath = create_spectrum_path(outdir, localtime)
-    plt.savefig(outpath)
+    with open(outpath, "wb") as f:
+        f.write(png.getbuffer())
     plt.close(fig)
 
     term.info(outpath)
