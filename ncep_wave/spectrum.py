@@ -95,13 +95,19 @@ class Spectrum:
 
     @property
     def records(self):
-        self._records = []
         while True:
             rec = self._parse_record()
             if not rec:
                 return
             self._records.append(rec)
             yield rec
+
+    def read_all(self):
+        while True:
+            rec = self._parse_record()
+            if not rec:
+                return self._records
+            self._records.append(rec)
 
     def _parse_header(self):
         """ Parses the header

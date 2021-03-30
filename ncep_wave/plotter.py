@@ -60,7 +60,8 @@ def plot_record(record, outdir=".", for_web=True):
 
     # Set title
     if for_web:
-        plt.tight_layout()
+        # plt.tight_layout()
+        plt.subplots_adjust(left=0, bottom=0, right=1, top=1, wspace=0, hspace=0)
     else:
         date = time.strftime("%Y/%m/%d %H%z", localtime)
         ax.set_title(f"{date}      Hs = {record.hs:0.2f}m")
