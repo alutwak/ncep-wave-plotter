@@ -1,4 +1,37 @@
 
+const tEXt = "tEXt".split("").map(c => c.charCodeAt(0));
+
+function findTEXt(buf) {
+    let itext = 0;
+    let u8v = new Uint8Array(buf);
+    for (let i_n of u8v.entries()) {
+        let i = i_n[0];
+        let n = i_n[1];
+        if (n == tEXt[itext]) {
+            itext++;
+            if (itext == tEXt.length)
+                return i + 1;
+        }
+        else {
+            itext = 0;
+        }
+    }
+    return undefined;
+}
+
+async function getHsFromImage(image) {
+    let reader = new Promise((resolve, reject) => {
+        var fr = new FileReader();  
+        fr.onload = () => resolve(fr.result);
+        fr.readAsArrayBuffer(image);
+    });
+
+    let buf =  await reader;
+    let itext = findTEXt(buf);
+    let dv = new DataView(buf, itext);
+    return dv.getFloat64(0, true);
+}
+
 /* Manages the playback of the images for a particular station
  */
 class ForecastPlayer {
@@ -55,21 +88,30 @@ class ForecastPlayer {
      * 
      * \param image_id The id for the image element
      */
-    async playForecast(image_id, date_id) {
+    async playForecast(image_id, date_id, hs_id) {
         let image_elem = document.getElementById(image_id);
         let date_elem = document.getElementById(date_id);
+        let hs_elem = document.getElementById(hs_id);
         this.play = true;
         let i = 0;
         let fctimes = await this.getLatestForecastTimes();
         while (this.play) {
-            let fct = fctimes[i];
+            let fct = fctimes[i];  // Get forecast time
+
+            let image = await this.getForecast(fct);  // Get the image
+
+            let hs = await getHsFromImage(image);  // Get significant wave height
+
+            // Create date from forecast time
             let y = parseInt(fct.slice(0, 4));
             let m = parseInt(fct.slice(4, 6)) - 1;
             let d = parseInt(fct.slice(6, 8));
             let h = parseInt(fct.slice(8));
             let date = new Date(y, m, d, h);
-            date_elem.innerText = date.toString();
-            let image = await this.getForecast(fct);
+
+            // Write header
+            date_elem.innerText = `${date.toDateString()} ${date.getHours()}`;
+            hs_elem.innerText = `${hs.toFixed(2)}m`;
             image_elem.src = window.URL.createObjectURL(image);
             i = (i + 1) % fctimes.length;
             await new Promise(resolve => setTimeout(resolve, 100));
