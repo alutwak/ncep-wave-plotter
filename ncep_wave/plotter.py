@@ -17,10 +17,14 @@ def write_hs_into_png(pngdata, hs):
 def plot_record(record, outdir=".", for_web=True):
     localtime = time.localtime(record.rtime)
 
-    dirs = np.flip(np.append(record.dirs, record.dirs[0]) - np.pi/2)
-    periods = record.freqs
-    data = np.append(record.data, np.atleast_2d(record.data[0]), axis=0)
-    r, theta = np.meshgrid(periods, dirs)
+    # Normalize directions and add 0 and 2pi to remove gap in plot
+    dirs = (2 * np.pi) - (record.dirs - np.pi/2) % (2 * np.pi)
+    dirs = np.concatenate(([0], dirs, [2 * np.pi]))
+
+    # Create 0 and 2pi values by averaging beginning and end of the data on the direction axis
+    zero_dir = np.atleast_2d(0.5 * (record.data[0] + record.data[-1]))
+    data = np.concatenate((zero_dir, record.data, zero_dir), axis=0)
+    r, theta = np.meshgrid(record.freqs, dirs)
 
     levels = np.logspace(-5, np.log2(data.max()), num=17, base=2, endpoint=False)
     colors = ("#0066ff", "#00b7ff", "#00e0ff", "#00ffff", "#00ffcc",
@@ -30,7 +34,6 @@ def plot_record(record, outdir=".", for_web=True):
     # Create Axis and Figure
     fig, ax = plt.subplots(figsize=(6, 6), subplot_kw=dict(projection='polar'))
     ax.set_rlim(0, 0.35)
-    ax.set_thetalim(2*np.pi, 0)
 
     # Plot colors
     ax.set_rlabel_position(ax.get_rlabel_position() + 245)  # Move the tics out of the way
