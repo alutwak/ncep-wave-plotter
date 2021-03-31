@@ -36,11 +36,21 @@ async function getHsFromImage(image) {
  */
 class ForecastPlayer {
 
-    constructor(station) {
+    constructor(station, image_id, date_id, hs_id) {
         this.station = station;
         this.forecasts = {};
         this.forecast_times = undefined;
         this.play = false;
+        this.period = 200;
+        this.fctime_index = 0;
+
+        this.image_id = image_id;
+        this.date_id = date_id;
+        this.hs_id = hs_id;
+    }
+
+    async init() {
+        this.fctimes = await this.getLatestForecastTimes();
     }
 
     /* Returns the latest forecast times
@@ -84,37 +94,80 @@ class ForecastPlayer {
             });
     }
 
+    faster() {
+        if (this.period > 100)
+            this.period -= 100;
+    }
+
+    slower() {
+        if (this.period < 1000)
+            this.period += 100;
+    }
+
+    stop() {
+        this.play = false;
+    }
+
+    async next(stop=false) {
+        if (stop) this.play = false;
+        this.fctime_index = (this.fctime_index + 1) % this.fctimes.length;
+        await this.updateSpectrum(this.fctime_index);
+    }
+
+    async prev(stop=false) {
+        if (stop) this.play = false;
+        this.fctime_index = (this.fctime_index - 1) % this.fctimes.length;
+        await this.updateSpectrum(this.fctime_index);
+    }
+
+    async first(stop=false) {
+        if (stop) this.play = false;
+        this.fctime_index = 0;
+        await this.updateSpectrum(this.fctime_index);
+    }
+
+    async last(stop=false) {
+        if (stop) this.play = false;
+        this.fctime_index = this.fctimes.length - 1;
+        await this.updateSpectrum(this.fctime_index);
+    }
+
+    async updateSpectrum(fct_i) {
+        let fct = this.fctimes[fct_i];
+        let date_elem = document.getElementById(this.date_id);
+        let hs_elem = document.getElementById(this.hs_id);
+        let image_elem = document.getElementById(this.image_id);
+
+        let image = await this.getForecast(fct);  // Get the image
+
+        let hs = await getHsFromImage(image);  // Get significant wave height
+
+        // Create date from forecast time
+        let y = parseInt(fct.slice(0, 4));
+        let m = parseInt(fct.slice(4, 6)) - 1;
+        let d = parseInt(fct.slice(6, 8));
+        let h = parseInt(fct.slice(8));
+        let date = new Date(y, m, d, h);
+
+        // Write header
+        date_elem.innerText = `${date.toDateString()} ${date.getHours()}:00`;
+        hs_elem.innerText = `${hs.toFixed(2)}m`;
+        image_elem.src = window.URL.createObjectURL(image);
+    }
+
     /* Plays all of the forecasts in a loop
      * 
      * \param image_id The id for the image element
      */
     async playForecast(image_id, date_id, hs_id) {
-        let image_elem = document.getElementById(image_id);
-        let date_elem = document.getElementById(date_id);
-        let hs_elem = document.getElementById(hs_id);
+        if (this.play) {
+            console.log("already playing");
+            return;
+        }
         this.play = true;
-        let i = 0;
-        let fctimes = await this.getLatestForecastTimes();
         while (this.play) {
-            let fct = fctimes[i];  // Get forecast time
-
-            let image = await this.getForecast(fct);  // Get the image
-
-            let hs = await getHsFromImage(image);  // Get significant wave height
-
-            // Create date from forecast time
-            let y = parseInt(fct.slice(0, 4));
-            let m = parseInt(fct.slice(4, 6)) - 1;
-            let d = parseInt(fct.slice(6, 8));
-            let h = parseInt(fct.slice(8));
-            let date = new Date(y, m, d, h);
-
-            // Write header
-            date_elem.innerText = `${date.toDateString()} ${date.getHours()}`;
-            hs_elem.innerText = `${hs.toFixed(2)}m`;
-            image_elem.src = window.URL.createObjectURL(image);
-            i = (i + 1) % fctimes.length;
-            await new Promise(resolve => setTimeout(resolve, 100));
+            await this.next();
+            await new Promise(resolve => setTimeout(resolve, this.period));
         }
     }
 

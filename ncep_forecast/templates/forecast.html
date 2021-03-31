@@ -3,18 +3,68 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 <head>
   <script src="{{ url_for('static', filename='spectrum.js') }}"></script>
-  <script>   
-    let player = new ForecastPlayer({{ station }});
+  <script>
+    let player = new ForecastPlayer({{ station }}, "spectrum", "date", "hs");
   </script>
 </head>
 <body>
-<div>
-  <h1 id="date"> Date </h1>
-  <h2 id="hs"> Significant Wave Height </h2>
-  <img id="spectrum" />
-</div>
+  <div>
+    <div>
+      <h1 id="date"> Date </h1>
+    </div>
+    <div>
+      <h2 id="hs"> Significant Wave Height </h2>
+    </div>
+    <div>
+      <img id="spectrum" />
+    </div>
+    <ul class="specCtl">
+      <li>
+        <button type="button" onclick="player.first(true)">
+          |<<
+        </button>
+      </li>
+      <li>
+        <button type="button" onclick="player.prev(true)">
+          |<
+        </button>
+      </li>
+      <li>
+        <button type="button" onclick="player.slower()">
+          slower
+        </button>
+      </li>
+      <li>
+        <button type="button" onclick="player.stop()">
+          stop
+        </button>
+      </li>
+      <li>
+        <button type="button" onclick="player.playForecast()">
+          play
+        </button>
+      </li>
+      <li>
+        <button type="button" onclick="player.faster()">
+          faster
+        </button>
+      </li>
+      <li>
+        <button type="button" onclick="player.next(true)">
+          |>
+        </button>
+      </li>
+      <li>
+        <button type="button" onclick="player.last(true)">
+          >>|
+        </button>
+      </li>
+    </ul>
+  </div>
 
 <script>
-  player.playForecast("spectrum", "date", "hs");
+  player.init().then(
+      () => player.playForecast("spectrum", "date", "hs")
+  );
 </script>
 </body>

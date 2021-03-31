@@ -7,3 +7,38 @@ body{
     font-weight:500;
     text-decoration: none;
 }
+
+ul.specCtl {
+	padding:0;
+	list-style-type:none;
+}
+
+ul.specCtl li {
+	display: inline;
+}
+
+ul.specCtl  li button {
+	/*background-color: #6E6E6E;*/
+	background-color:#6E7B91;
+	color: #FFF;
+	border: 1.5px solid #333;
+	font-size: 16px;
+	font-weight: 600;
+	padding: 1.5px 12px;
+	margin: 0 4px;
+	text-decoration: none;
+	border-radius: 3px;
+	-moz-border-radius: 3px;
+	-webkit-border-radius: 3px;
+	box-shadow: 0 0 5px 0 gray;
+	-moz-box-shadow: 0 0 5px 0 gray;
+	-webkit-box-shadow: 0 0 5px 0 gray;
+}
+
+ul.specCtl button:hover, ul.specCtl button:focus {
+	background-color: #FFF;
+	color: #6E7B91;
+	box-shadow: none;
+	-moz-box-shadow: none;
+	-webkit-box-shadow: none;
+}
