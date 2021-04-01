@@ -8,7 +8,7 @@
   </script>
 </head>
 <body>
-  <div>
+  <div id="spec-container" class="time-scroll">
     <div>
       <h1 id="date"> Date </h1>
     </div>
@@ -16,46 +16,46 @@
       <h2 id="hs"> Significant Wave Height </h2>
     </div>
     <div>
-      <img id="spectrum" />
+      <img id="spectrum"/>
     </div>
-    <ul class="specCtl">
+    <ul class="specCtl" id="control">
       <li>
-        <button type="button" onclick="player.first(true)">
+        <button type="button" id="first">
           |<<
         </button>
       </li>
       <li>
-        <button type="button" onclick="player.prev(true)">
+        <button type="button" id="prev">
           |<
         </button>
       </li>
       <li>
-        <button type="button" onclick="player.slower()">
+        <button type="button" id="slower">
           slower
         </button>
       </li>
       <li>
-        <button type="button" onclick="player.stop()">
+        <button type="button" id="stop">
           stop
         </button>
       </li>
       <li>
-        <button type="button" onclick="player.playForecast()">
+        <button type="button" id="play">
           play
         </button>
       </li>
       <li>
-        <button type="button" onclick="player.faster()">
+        <button type="button" id="faster">
           faster
         </button>
       </li>
       <li>
-        <button type="button" onclick="player.next(true)">
+        <button type="button" id="next">
           |>
         </button>
       </li>
       <li>
-        <button type="button" onclick="player.last(true)">
+        <button type="button" id="last">
           >>|
         </button>
       </li>
@@ -64,7 +64,10 @@
 
 <script>
   player.init().then(
-      () => player.playForecast("spectrum", "date", "hs")
+      () => player.play()
   );
+  control.addEventListener("click", player);
+  spectrum.addEventListener("mouseover", player);
+  spectrum.addEventListener("mouseout", player);
 </script>
 </body>

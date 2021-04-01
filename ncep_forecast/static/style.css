@@ -8,6 +8,19 @@ body{
     text-decoration: none;
 }
 
+.time-scroll {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+}
+
+.fake-scroll {
+    position: absolute;
+    top: 0;
+    width: 1px;
+}
+
 ul.specCtl {
 	padding:0;
 	list-style-type:none;

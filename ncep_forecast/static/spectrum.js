@@ -40,7 +40,7 @@ class ForecastPlayer {
         this.station = station;
         this.forecasts = {};
         this.forecast_times = undefined;
-        this.play = false;
+        this.run = false;
         this.period = 200;
         this.fctime_index = 0;
 
@@ -105,34 +105,53 @@ class ForecastPlayer {
     }
 
     stop() {
-        this.play = false;
+        this.run = false;
     }
 
-    async next(stop=false) {
-        if (stop) this.play = false;
+    async next(stop=true) {
+        if (stop) this.stop();
         this.fctime_index = (this.fctime_index + 1) % this.fctimes.length;
         await this.updateSpectrum(this.fctime_index);
     }
 
-    async prev(stop=false) {
-        if (stop) this.play = false;
+    async prev(stop=true) {
+        if (stop) this.stop();
         this.fctime_index = (this.fctime_index - 1) % this.fctimes.length;
         await this.updateSpectrum(this.fctime_index);
     }
 
-    async first(stop=false) {
-        if (stop) this.play = false;
+    async first(stop=true) {
+        if (stop) this.stop();
         this.fctime_index = 0;
         await this.updateSpectrum(this.fctime_index);
     }
 
-    async last(stop=false) {
-        if (stop) this.play = false;
+    async last(stop=true) {
+        if (stop) this.stop();
         this.fctime_index = this.fctimes.length - 1;
         await this.updateSpectrum(this.fctime_index);
     }
 
+    /* Plays all of the forecasts in a loop
+     * 
+     * \param image_id The id for the image element
+     */
+    async play() {
+        if (this.run) {
+            console.log("already playing");
+            return;
+        }
+        this.run = true;
+        while (this.run) {
+            await this.next(false);
+            await new Promise(resolve => setTimeout(resolve, this.period));
+        }
+    }
+
     async updateSpectrum(fct_i) {
+        fct_i = Math.min(fct_i, this.fctimes.length - 1);
+        fct_i = Math.max(fct_i, 0);
+
         let fct = this.fctimes[fct_i];
         let date_elem = document.getElementById(this.date_id);
         let hs_elem = document.getElementById(this.hs_id);
@@ -155,19 +174,56 @@ class ForecastPlayer {
         image_elem.src = window.URL.createObjectURL(image);
     }
 
-    /* Plays all of the forecasts in a loop
-     * 
-     * \param image_id The id for the image element
-     */
-    async playForecast(image_id, date_id, hs_id) {
-        if (this.play) {
-            console.log("already playing");
-            return;
-        }
-        this.play = true;
-        while (this.play) {
-            await this.next();
-            await new Promise(resolve => setTimeout(resolve, this.period));
+    setUpSpecAnimation() {
+        this.fakeScroll = document.createElement('div');
+        this.fakeScroll.className = 'fake-scroll';
+        document.body.appendChild(this.fakeScroll);
+
+        let container = document.getElementById("spec-container");
+
+        // Set `height` for the fake scroll element
+        let height = 10 * this.forecast_times.length + document.documentElement.clientHeight;
+        this.fakeScroll.style.height = height + 'px';
+
+        window.scroll(0, 10 * this.fctime_index);
+    }
+
+    tearDownSpecAnimation() {
+        document.body.removeChild(this.fakeScroll);
+    }
+
+    handleEvent(event) {
+        let target = event.target;
+
+        switch (event.type) {
+        case "click":
+            if (target.tagName == "BUTTON" & target.closest("ul") == document.getElementById("control")) {
+                eval(`this.${target.id}()`);
+            }
+            break;
+        case "mouseover":
+            this.mouse_on = target;
+            if (target.id == "spectrum") {
+                this.was_running = this.run;
+                this.stop();
+
+                this.setUpSpecAnimation();
+                window.addEventListener("scroll", this);
+            }
+            break;
+        case "mouseout":
+            this.mouse_on = undefined;
+            if (target.id == "spectrum") {
+                this.tearDownSpecAnimation();
+                window.removeEventListener("scroll", this);
+                if (this.was_running) this.play();
+            }
+            break;
+        case "scroll":
+            if (this.mouse_on == document.getElementById("spectrum")) {
+                this.fctime_index = Math.floor(window.scrollY / 10);
+                this.updateSpectrum(this.fctime_index);
+            }   
         }
     }
 
