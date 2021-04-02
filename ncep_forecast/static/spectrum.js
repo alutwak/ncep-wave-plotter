@@ -39,14 +39,16 @@ class ForecastPlayer {
     constructor(station, image_id, date_id, hs_id) {
         this.station = station;
         this.forecasts = {};
-        this.forecast_times = undefined;
+        this.hs = {};
+        this.forecast_times = null;
         this.run = false;
-        this.period = 200;
+        this.period = 50;
         this.fctime_index = 0;
 
         this.image_id = image_id;
         this.date_id = date_id;
         this.hs_id = hs_id;
+        this.img_el = null;
     }
 
     async init() {
@@ -56,7 +58,7 @@ class ForecastPlayer {
     /* Returns the latest forecast times
      */ 
     async getLatestForecastTimes() {
-        if (this.forecast_times === undefined) {
+        if (this.forecast_times === null) {
             const response = await fetch(`/latest/${this.station}`);
             let times = "Error";
             if (response.ok) {
@@ -74,34 +76,25 @@ class ForecastPlayer {
             const response = await fetch(`/forecast/${this.station}/${fc_time}`);
             
             if (response.ok) {
-                this.forecasts[fc_time] = await response.blob();
+                // Get the image and create a url
+                let image = await response.blob();
+                this.forecasts[fc_time] = window.URL.createObjectURL(image);
+
+                let hs = await getHsFromImage(image);  // Get significant wave height
+                this.hs[fc_time] = hs;
             }
         }
-        return this.forecasts[fc_time];
-    }
-
-    /* Fetches all of the forecast times and images and caches them
-     */
-    async fetchForecasts() {
-        this.getLatestForecastTimes().then(
-            async () => {
-                let forecasts = {};
-                for (let fc_time of this.forecast_times) {
-                    let image = await this.getForecast(fc_time);
-                    forecasts[fc_time] = image;
-                }
-                this.forecasts = forecasts; // Really not sure why this can't be defined directly
-            });
+        return [this.forecasts[fc_time], this.hs[fc_time]];
     }
 
     faster() {
-        if (this.period > 100)
-            this.period -= 100;
+        if (this.period > 50)
+            this.period -= 50;
     }
 
     slower() {
         if (this.period < 1000)
-            this.period += 100;
+            this.period += 50;
     }
 
     stop() {
@@ -155,11 +148,9 @@ class ForecastPlayer {
         let fct = this.fctimes[fct_i];
         let date_elem = document.getElementById(this.date_id);
         let hs_elem = document.getElementById(this.hs_id);
-        let image_elem = document.getElementById(this.image_id);
 
-        let image = await this.getForecast(fct);  // Get the image
-
-        let hs = await getHsFromImage(image);  // Get significant wave height
+        let [img_url, hs] = await this.getForecast(fct);  // Get the image
+        document.getElementById(this.image_id).src = img_url;
 
         // Create date from forecast time
         let y = parseInt(fct.slice(0, 4));
@@ -171,7 +162,6 @@ class ForecastPlayer {
         // Write header
         date_elem.innerText = `${date.toDateString()} ${date.getHours()}:00`;
         hs_elem.innerText = `${hs.toFixed(2)}m`;
-        image_elem.src = window.URL.createObjectURL(image);
     }
 
     setUpSpecAnimation() {
@@ -182,10 +172,11 @@ class ForecastPlayer {
         let container = document.getElementById("spec-container");
 
         // Set `height` for the fake scroll element
-        let height = 10 * this.forecast_times.length + document.documentElement.clientHeight;
-        this.fakeScroll.style.height = height + 'px';
+        this.scroll_height = 10 * this.forecast_times.length;
+        this.fakeScroll.style.height = (this.scroll_height + document.documentElement.clientHeight) + 'px';
 
-        window.scroll(0, 10 * this.fctime_index);
+
+        window.scroll(0, this.scroll_height - (10 * this.fctime_index));
     }
 
     tearDownSpecAnimation() {
@@ -221,8 +212,9 @@ class ForecastPlayer {
             break;
         case "scroll":
             if (this.mouse_on == document.getElementById("spectrum")) {
-                this.fctime_index = Math.floor(window.scrollY / 10);
+                this.fctime_index = Math.floor((this.scroll_height - window.scrollY) / 10);
                 this.updateSpectrum(this.fctime_index);
+                console.log(`height: ${this.scroll_height}, scrollY: ${window.scrollY}, index: ${this.fctime_index}`);
             }   
         }
     }
