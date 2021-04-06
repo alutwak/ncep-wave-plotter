@@ -87,10 +87,7 @@ class NCEPWaveDataFetcher:
     def latest_spectrals(self):
         return self.latest_station_file(STATION_FILE.SPECTRAL)
 
-    def fetch_latest_spectrals(self, cache=None):
-        if cache is None:
-            cache = DEFAULT_CACHE
-
+    def fetch_latest_spectrals(self, cache=DEFAULT_CACHE):
         # Get the target data, the output dirname and the output path
         target_tar = self.latest_spectrals()
         if target_tar is None:
@@ -119,6 +116,6 @@ class NCEPWaveDataFetcher:
         return output_path
 
 
-def fetch_latest_spectral_data(cache=None):
+def fetch_latest_spectral_data(cache=DEFAULT_CACHE):
     with NCEPWaveDataFetcher() as wdf:
         return wdf.fetch_latest_spectrals(cache)
