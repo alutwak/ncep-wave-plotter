@@ -1,0 +1,3 @@
+graft ncep_forecast/static
+graft ncep_forecast/templates
+global-exclude *.pyc
