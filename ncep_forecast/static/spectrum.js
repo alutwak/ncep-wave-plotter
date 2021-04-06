@@ -42,31 +42,52 @@ class ForecastPlayer {
         this.hs = {};
         this.forecast_times = null;
         this.run = false;
-        this.period = 50;
+        this.period = 100;
         this.fctime_index = 0;
 
         this.image_id = image_id;
         this.date_id = date_id;
         this.hs_id = hs_id;
         this.img_el = null;
+
+        this.latest_forecast = null;
+        this.newDataTimer = setInterval(() => this.checkForNewData(), 60000);
     }
 
     async init() {
         this.fctimes = await this.getLatestForecastTimes();
     }
 
+    async fetchLatestForecastTimes() {
+        const response = await fetch(`/forecast/times/${this.station}`);
+        let times = "Error";
+        if (response.ok) {
+            times = await response.json();
+        }
+        this.forecast_times = times[this.station];
+    }
+
     /* Returns the latest forecast times
      */ 
     async getLatestForecastTimes() {
         if (this.forecast_times === null) {
-            const response = await fetch(`/latest/${this.station}`);
-            let times = "Error";
-            if (response.ok) {
-                times = await response.json();
-            }
-            this.forecast_times = times[this.station];
+            await this.fetchLatestForecastTimes();
         }
         return this.forecast_times;
+    }
+
+    async checkForNewData() {
+        let latest;
+        let response = await fetch(`/latest/${this.station}`);
+        if (response.ok) {
+            latest = await response.json();
+        }
+        if (this.latest_forecast == null || latest[this.station] != this.latest_forecast) {
+            await this.fetchLatestForecastTimes();
+            this.forecasts = {};
+            this.hs = {};
+            this.latest_forecast = latest[this.station];
+        }
     }
 
     /* Gets the forecast image for the given forecast time
@@ -174,7 +195,6 @@ class ForecastPlayer {
         // Set `height` for the fake scroll element
         this.scroll_height = 10 * this.forecast_times.length;
         this.fakeScroll.style.height = (this.scroll_height + document.documentElement.clientHeight) + 'px';
-
 
         window.scroll(0, this.scroll_height - (10 * this.fctime_index));
     }
