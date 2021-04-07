@@ -1,0 +1,21 @@
+[Unit]
+Description=NCEP Wave Forecast Server
+
+[Service]
+ExecStart=/usr/local/bin/twistd \
+    --nodaemon \
+    --pidfile= \
+    web --listen systemd:domain=INET:index=0 --wsgi ncep_forecast.app
+        
+NonBlocking=true
+
+WorkingDirectory=/home/wave/ncep-forecast
+
+User=wave
+Group=wave
+
+
+Restart=always
+
+# [Install]
+# WantedBy=multi-user.target
