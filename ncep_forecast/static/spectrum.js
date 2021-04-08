@@ -52,6 +52,9 @@ class ForecastPlayer {
 
         this.latest_forecast = null;
         this.newDataTimer = setInterval(() => this.checkForNewData(), 60000);
+
+        this.mouse_on = null;
+        this.shifted = false;
     }
 
     async init() {
@@ -125,15 +128,17 @@ class ForecastPlayer {
         this.run = false;
     }
 
-    async next(stop=true) {
+    async next(stop=true, step=1) {
         if (stop) this.stop();
-        this.fctime_index = (this.fctime_index + 1) % this.fctimes.length;
+        this.fctime_index = (this.fctime_index + step) % this.fctimes.length;
         await this.updateSpectrum(this.fctime_index);
     }
 
-    async prev(stop=true) {
+    async prev(stop=true, step=1) {
         if (stop) this.stop();
-        this.fctime_index = (this.fctime_index - 1) % this.fctimes.length;
+        let next = this.fctime_index - step;
+        // This modulo atrocity is due to the dumb way js does negative modulos
+        this.fctime_index = ((next % this.fctimes.length) + this.fctimes.length) % this.fctimes.length;
         await this.updateSpectrum(this.fctime_index);
     }
 
@@ -163,6 +168,13 @@ class ForecastPlayer {
             await this.next(false);
             await new Promise(resolve => setTimeout(resolve, this.period));
         }
+    }
+
+    toggle() {
+        if (this.run)
+            this.stop();
+        else
+            this.play();
     }
 
     async updateSpectrum(fct_i) {
@@ -210,10 +222,11 @@ class ForecastPlayer {
         let target = event.target;
 
         switch (event.type) {
-        case "click":
-            if (target.tagName == "BUTTON" & target.closest("ul") == document.getElementById("control")) {
-                eval(`this.${target.id}()`);
-            }
+        case "keydown":
+            this.handleKeyDownEvent(event);
+            break;
+        case "keyup":
+            this.handleKeyUpEvent(event);
             break;
         case "mouseover":
             this.mouse_on = target;
@@ -226,7 +239,7 @@ class ForecastPlayer {
             }
             break;
         case "mouseout":
-            this.mouse_on = undefined;
+            this.mouse_on = null;
             if (target.id == "spectrum") {
                 this.tearDownSpecAnimation();
                 window.removeEventListener("scroll", this);
@@ -238,8 +251,54 @@ class ForecastPlayer {
                 this.fctime_index = Math.floor((this.scroll_height - window.scrollY) / 10);
                 this.updateSpectrum(this.fctime_index);
                 console.log(`height: ${this.scroll_height}, scrollY: ${window.scrollY}, index: ${this.fctime_index}`);
-            }   
+            }
         }
+    }
+
+    handleKeyDownEvent(event) {
+        let step;
+        switch (event.code) {
+        case "Space":
+            this.toggle();
+            break;
+        case "ArrowRight":
+            step = 1;  // Skip an hour by default
+            if (this.shifted)  // Skip a day when shifted
+                step = 24;
+            this.next(false, step);
+            break;
+        case "ArrowLeft":
+            step = 1;  // Back an hour by default
+            if (this.shifted)  // Back a day when shifted
+                step = 24;
+            this.prev(false, step);
+            break;
+        case "ArrowUp":
+            this.faster();
+            break;
+        case "ArrowDown":
+            this.slower();
+            break;
+        case "ShiftLeft":
+        case "ShiftRight":
+            this.shifted = true;
+            break;
+        default:
+            return;
+        }
+        event.preventDefault();
+    }
+
+    handleKeyUpEvent(event) {
+        switch (event.code) {
+        case "ShiftLeft":
+        case "ShiftRight":
+            this.shifted = false;
+            break;
+        default:
+            return;
+        }
+        event.preventDefault();
     }
 
 }

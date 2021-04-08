@@ -18,56 +18,16 @@
     <div>
       <img id="spectrum"/>
     </div>
-    <ul class="specCtl" id="control">
-      <li>
-        <button type="button" id="first">
-          |<<
-        </button>
-      </li>
-      <li>
-        <button type="button" id="prev">
-          |<
-        </button>
-      </li>
-      <li>
-        <button type="button" id="slower">
-          slower
-        </button>
-      </li>
-      <li>
-        <button type="button" id="stop">
-          stop
-        </button>
-      </li>
-      <li>
-        <button type="button" id="play">
-          play
-        </button>
-      </li>
-      <li>
-        <button type="button" id="faster">
-          faster
-        </button>
-      </li>
-      <li>
-        <button type="button" id="next">
-          |>
-        </button>
-      </li>
-      <li>
-        <button type="button" id="last">
-          >>|
-        </button>
-      </li>
-    </ul>
   </div>
 
 <script>
   player.init().then(
       () => player.play()
   );
-  control.addEventListener("click", player);
+  document.body.addEventListener("keydown", player);
+  document.body.addEventListener("keyup", player);
   spectrum.addEventListener("mouseover", player);
   spectrum.addEventListener("mouseout", player);
+  
 </script>
 </body>
