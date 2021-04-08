@@ -37,7 +37,7 @@ def plot_record(record, outdir=".", for_web=True):
 
     # Plot colors
     ax.set_rlabel_position(ax.get_rlabel_position() + 245)  # Move the tics out of the way
-    ax.tick_params(labelcolor="white")
+    ax.tick_params(labelcolor="#141b1d")
     ticks = ax.get_yticks()
     ax.set_yticks(ticks)
     ax.set_yticklabels([f"{1/f:0.1f}" for f in ticks])
@@ -68,7 +68,7 @@ def plot_record(record, outdir=".", for_web=True):
 
     # Generate the png data
     png = BytesIO()
-    plt.savefig(png, format="png")
+    plt.savefig(png, format="png", facecolor="#141b1d")
     write_hs_into_png(png, record.hs)
 
     # Save and close figure
