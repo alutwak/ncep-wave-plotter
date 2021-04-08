@@ -72,21 +72,24 @@ class ForecastPlayer {
     async getLatestForecastTimes() {
         if (this.forecast_times === null) {
             await this.fetchLatestForecastTimes();
+            this.latest_forecast = await this.getLatestForecastRun();
         }
         return this.forecast_times;
     }
 
-    async checkForNewData() {
-        let latest;
+    async getLatestForecastRun() {
         let response = await fetch(`/latest/${this.station}`);
         if (response.ok) {
-            latest = await response.json();
+            let latest = await response.json();
+            return latest[this.station];
         }
-        if (this.latest_forecast == null || latest[this.station] != this.latest_forecast) {
-            await this.fetchLatestForecastTimes();
-            this.forecasts = {};
-            this.hs = {};
-            this.latest_forecast = latest[this.station];
+        return null;
+    }
+
+    async checkForNewData() {
+        let latest = await this.getLatestForecastRun();
+        if (this.latest_forecast != null && latest != this.latest_forecast) {
+            window.location.reload();
         }
     }
 
