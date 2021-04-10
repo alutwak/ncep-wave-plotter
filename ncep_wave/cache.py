@@ -88,10 +88,14 @@ def get_spectrum_time(path):
 
 def clean_up_cache(cache=DEFAULT_CACHE):
     # Clean up the data cache
-    old_data = sorted(glob.glob(os.path.join(cache, "gfs.*")))
-    for od in old_data[:-1]:
+    old_days = sorted(glob.glob(os.path.join(cache, "gfs.*")))
+    for od in old_days[:-1]:
         term.message(f"Removing old data directory {od}")
         shutil.rmtree(od, ignore_errors=True)
+    old_runs = sorted(glob.glob(os.path.join(old_days[-1], "*")))
+    for run in old_runs[:-1]:
+        term.message(f"Removing old run directory {run}")
+        shutil.rmtree(run, ignore_errors=True)
 
     # Clean up the image cache
     image_cache = get_image_cache(cache)
