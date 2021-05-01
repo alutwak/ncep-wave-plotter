@@ -44,6 +44,7 @@ def set_latest_forecast(station, forecast_time, cache=DEFAULT_CACHE):
 
     # Set latest forecast time
     index[station] = time.strftime(FORECAST_TIMESPEC, forecast_time)
+    term.message(f"Set latest forecast for station {station} to {index[station]}")
     with open(findex, "w") as f:
         json.dump(index, f)
 

@@ -9,8 +9,8 @@ from .cache import make_forecast_path, set_latest_forecast, clean_up_cache
 
 
 def make_forcast(station, outdir):
-    today = time.localtime()
-    forecast_dir = make_forecast_path(station, forecast_time=today, cache=outdir)
+    this_hour = time.localtime()
+    forecast_dir = make_forecast_path(station, forecast_time=this_hour, cache=outdir)
     latest_spec = fetch_latest_spectral_data()
     if latest_spec is None:
         term.message("Forecast failed")
@@ -25,5 +25,5 @@ def make_forcast(station, outdir):
     for rec in spectrum.records:
         plot_record(rec, forecast_dir)
 
-    set_latest_forecast(station, today, cache=outdir)
+    set_latest_forecast(station, this_hour, cache=outdir)
     clean_up_cache(cache=outdir)
