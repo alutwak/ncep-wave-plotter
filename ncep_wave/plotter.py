@@ -14,16 +14,25 @@ def write_hs_into_png(pngdata, hs):
     pngdata.getbuffer()[tEXt:tEXt + 8] = hs.tobytes()
 
 
-def plot_record(record, outdir=".", for_web=True):
+def plot_record(record, outdir=".", join_ends=True, normalize_dirs=True, for_web=True):
     localtime = time.localtime(record.rtime)
 
-    # Normalize directions and add 0 and 2pi to remove gap in plot
-    dirs = (2 * np.pi) - (record.dirs - np.pi/2) % (2 * np.pi)
-    dirs = np.concatenate(([0], dirs, [2 * np.pi]))
+    # Normalize directions
+    if normalize_dirs:
+        dirs = (2 * np.pi) - (record.dirs - np.pi/2) % (2 * np.pi)
+    else:
+        dirs = record.dirs
 
-    # Create 0 and 2pi values by averaging beginning and end of the data on the direction axis
-    zero_dir = np.atleast_2d(0.5 * (record.data[0] + record.data[-1]))
-    data = np.concatenate((zero_dir, record.data, zero_dir), axis=0)
+    if join_ends:
+        # Add 0 and 2pi to remove gap in plot
+        dirs = np.concatenate(([0], dirs, [2 * np.pi]))
+
+        # Create 0 and 2pi values by averaging beginning and end of the data on the direction axis
+        zero_dir = np.atleast_2d(0.5 * (record.data[0] + record.data[-1]))
+        data = np.concatenate((zero_dir, record.data, zero_dir), axis=0)
+    else:
+        data = record.data
+
     r, theta = np.meshgrid(record.freqs, dirs)
 
     levels = np.logspace(-5, np.log2(data.max()), num=17, base=2, endpoint=False)
@@ -40,7 +49,7 @@ def plot_record(record, outdir=".", for_web=True):
     ax.tick_params(labelcolor="#141b1d")
     ticks = ax.get_yticks()
     ax.set_yticks(ticks)
-    ax.set_yticklabels([f"{1/f:0.1f}" for f in ticks])
+    ax.set_yticklabels([f"{1/f:0.1f}" for f in ticks], color="white")
     cs1 = ax.contourf(theta, r, data, levels, colors=colors, extend="both")
     cs1.cmap.set_under("#0000cd")
     cs1.cmap.set_over("#ff00ff")
@@ -65,6 +74,8 @@ def plot_record(record, outdir=".", for_web=True):
     else:
         date = time.strftime("%Y/%m/%d %H%z", localtime)
         ax.set_title(f"{date}      Hs = {record.hs:0.2f}m")
+
+    term.info(f"Hs: {record.hs}m")
 
     # Generate the png data
     png = BytesIO()

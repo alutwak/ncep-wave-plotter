@@ -1,5 +1,7 @@
 import re
+import io
 import time
+import struct
 
 import numpy as np
 
@@ -70,10 +72,14 @@ class Spectrum:
             E = np.dot(dir_int, bw) + tailf * dir_int[-1]
             return 4 * np.sqrt(E)
 
-    def __init__(self, fspec_path):
-        term.message(f"Parsing data in {fspec_path}")
-
-        self.fspec = open(fspec_path)
+    def __init__(self, fspec):
+        if isinstance(fspec, str):
+            term.message(f"Parsing data in {fspec}")
+            self.fspec = open(fspec)
+        elif isinstance(fspec, io.BufferedReader):
+            self.fspec = fspec
+        else:
+            raise ValueError(f"Cannot parse {type(fspec)} into a Spectrum")
         self._records = []
         self._parse_header()
 
@@ -110,6 +116,18 @@ class Spectrum:
             self._records.append(rec)
 
     def _parse_header(self):
+        if self.fspec.mode == "rb":
+            self._parse_binary_header()
+        else:
+            self._parse_ascii_header()
+
+    def _parse_record(self):
+        if self.fspec.mode == "rb":
+            return self._parse_binary_record()
+        else:
+            return self._parse_ascii_record()
+
+    def _parse_ascii_header(self):
         """ Parses the header
 
         This captures:
@@ -146,7 +164,36 @@ class Spectrum:
             raise ValueError(f"Wrong number of directions: {len(dirs)} != {self.ndirs}\n{dirs}")
         self.dirs = np.array(dirs)
 
-    def _parse_record(self):
+    def _parse_binary_header(self):
+        """
+        | Form     | Value         | format      | unit |              n |
+        |----------+---------------+-------------+------+----------------|
+        |          | sname length  | uint8       |      |              1 |
+        |          | station name  | string      |      |       variable |
+        |          | latitude      | float       | deg  |              1 |
+        |          | longitude     | float       | deg  |              1 |
+        | Header   | n freqs       | uint16      |      |              1 |
+        |          | freqs         | float array | Hz   |        n freqs |
+        |          | n dirs        | uint16      |      |              1 |
+        |          | directions    | float array | rads |         n dirs |
+        """
+        sname_len = self.fspec.read(1)[0]
+        self.station_name = str(self.fspec.read(sname_len))
+        self.lat, self.lon = struct.unpack("ff", self.fspec.read(8))  # read 2*float32
+
+        self.nfreqs = struct.unpack("H", self.fspec.read(2))[0]
+        freqs = struct.unpack("f" * self.nfreqs, self.fspec.read(4 * self.nfreqs))
+        self.freqs = np.array(freqs)
+
+        # Calculate dfreqs
+        df = self.freqs[1:]/self.freqs[:-1]
+        self.df = np.append(df, df[-1])
+
+        self.ndirs = struct.unpack("H", self.fspec.read(2))[0]
+        dirs = struct.unpack("f" * self.ndirs, self.fspec.read(4 * self.ndirs))
+        self.dirs = np.array(dirs)
+
+    def _parse_ascii_record(self):
         """ Parses a single record
 
         A record consists of:
@@ -187,3 +234,39 @@ class Spectrum:
 
         record.data = np.array(data).reshape((self.ndirs, self.nfreqs))
         return record
+
+    def _parse_binary_record(self):
+        """
+        | Form     | Value         | format              | unit |              n |
+        |----------+---------------+---------------------+------+----------------|
+        | Record 1 | time          | uint32              | s    |              1 |
+        |          | water depth   | float               | m    |              1 |
+        |          | wind speed    | float               | m/s  |              1 |
+        |          | wind dir      | float               | rads |              1 |
+        |          | current speed | float               | m/s  |              1 |
+        |          | current dir   | float               | rads |              1 |
+        |          | spectrum      | counted float array |      | n freqs*n dirs |
+        |----------+---------------+---------------------+------+----------------|
+        """
+        try:
+            rtime, depth, UA, UD, crnt, crnt_dir = struct.unpack("Ifffff", self.fspec.read(4 * 6))
+            spec_len = struct.unpack("I", self.fspec.read(4))[0]
+            exp_spec_len = self.nfreqs * self.ndirs
+            if spec_len != exp_spec_len:
+                raise ValueError(f"Received unexpected amount of data: \ngot {spec_len} values, expected {exp_spec_len}")
+            data = struct.unpack("f" * spec_len, self.fspec.read(4 * spec_len))
+
+            record = Spectrum.Record(rtime,
+                                     self.station_name,
+                                     self.lat,
+                                     self.lon,
+                                     depth,
+                                     UA, UD,
+                                     crnt, crnt_dir,
+                                     self.freqs, self.df,
+                                     self.dirs)
+            record.data = np.array(data).reshape((self.ndirs, self.nfreqs))
+
+            return record
+        except struct.error:
+            return None
