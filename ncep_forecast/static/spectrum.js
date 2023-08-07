@@ -55,6 +55,7 @@ class ForecastPlayer {
 
         this.mouse_on = null;
         this.shifted = false;
+        this.fetching = false
     }
 
     async init() {
@@ -96,20 +97,29 @@ class ForecastPlayer {
         }
     }
 
+    async fetchForecasts() {
+        if (!this.fetching) {
+            this.fetching = true
+            for (let i=0; i<this.fctimes.length; i++) {
+                const fctime = this.fctimes[i]
+                const response = await fetch(`/forecast/${this.station}/${fctime}`);
+                if (response.ok) {
+                    // Get the image and create a url
+                    let image = await response.blob();
+                    this.forecasts[fctime] = window.URL.createObjectURL(image);
+                    this.hs[fctime] = await getHsFromImage(image);  // Get significant wave height
+                }
+            }
+            this.fetching = false
+        }
+    }
+
     /* Gets the forecast image for the given forecast time
      */
     async getForecast(fc_time) {
         if (!(fc_time in this.forecasts)) {
-            const response = await fetch(`/forecast/${this.station}/${fc_time}`);
-            
-            if (response.ok) {
-                // Get the image and create a url
-                let image = await response.blob();
-                this.forecasts[fc_time] = window.URL.createObjectURL(image);
-
-                let hs = await getHsFromImage(image);  // Get significant wave height
-                this.hs[fc_time] = hs;
-            }
+            this.fetchForecasts()
+            return null
         }
         return [this.forecasts[fc_time], this.hs[fc_time]];
     }
@@ -181,19 +191,25 @@ class ForecastPlayer {
         fct_i = Math.min(fct_i, this.fctimes.length - 1);
         fct_i = Math.max(fct_i, 0);
 
-        let fct = this.fctimes[fct_i];
-        let date_elem = document.getElementById(this.date_id);
-        let hs_elem = document.getElementById(this.hs_id);
+        const fct = this.fctimes[fct_i];
 
-        let [img_url, hs] = await this.getForecast(fct);  // Get the image
+        // Try to get the image & move on if we can't
+        const forecast = await this.getForecast(fct);
+        if (!forecast) return
+
+        const [img_url, hs] = forecast
+
+        const date_elem = document.getElementById(this.date_id);
+        const hs_elem = document.getElementById(this.hs_id);
+
         document.getElementById(this.image_id).src = img_url;
 
         // Create date from forecast time
-        let y = parseInt(fct.slice(0, 4));
-        let m = parseInt(fct.slice(4, 6)) - 1;
-        let d = parseInt(fct.slice(6, 8));
-        let h = parseInt(fct.slice(8));
-        let date = new Date(y, m, d, h);
+        const y = parseInt(fct.slice(0, 4));
+        const m = parseInt(fct.slice(4, 6)) - 1;
+        const d = parseInt(fct.slice(6, 8));
+        const h = parseInt(fct.slice(8));
+        const date = new Date(y, m, d, h);
 
         // Write header
         date_elem.innerText = `${date.toDateString()} ${date.getHours()}:00`;
