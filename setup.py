@@ -9,7 +9,8 @@ setup(
     install_requires=[
         "flask",
         "numpy",
-        "matplotlib"
+        "matplotlib",
+        "pyyaml"
     ],
     entry_points={
         "console_scripts": [
