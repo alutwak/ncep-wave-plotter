@@ -1,13 +1,15 @@
-
 from flask import Flask, render_template, abort, send_file
 
-from ncep_wave.cache import get_latest_forecast, get_spectrum_time, get_latest_forecast_run_time
+from ncep_wave.cache import (
+    get_latest_forecast,
+    get_spectrum_time,
+    get_latest_forecast_run_time,
+)
 
 
 def create_app():
     app = Flask(__name__, instance_relative_config=True)
-    app.config.from_mapping(SECRET_KEY='dev',
-                            TESTING=True)
+    app.config.from_mapping(SECRET_KEY="dev", TESTING=True)
 
     @app.route("/")
     def index():
@@ -44,7 +46,7 @@ def create_app():
 
     @app.after_request
     def add_cors_headers(response):
-        response.headers.add('Access-Control-Allow-Origin', "*")
+        response.headers.add("Access-Control-Allow-Origin", "*")
         return response
 
     return app

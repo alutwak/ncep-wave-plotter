@@ -103,4 +103,12 @@ sudo systemctl enable ncep-forecast.socket
 sudo systemctl enable ncep-forecast.service
 ```
 
+#### Updating the webserver
+
+```shell
+cd ncep-wave-plotter
+sudo pip install .
+suddo systemctl restart ncep-forecast.service
+```
+
 Happy surfing!
