@@ -1,3 +1,4 @@
+import sys
 import os
 import time
 
@@ -27,3 +28,17 @@ def make_forcast(station, outdir):
 
     set_latest_forecast(station, this_hour, cache=outdir)
     clean_up_cache(cache=outdir)
+
+
+def plot_binary_data(outdir, path=None):
+    if path:
+        fspec = open(path, "rb")
+    else:
+        fspec = sys.stdin.buffer
+    spectrum = Spectrum(fspec)
+
+    term.message("Generating spectrum plots...")
+    term.info(f"--- {outdir} ---")
+    os.makedirs(outdir, exist_ok=True)
+    for rec in spectrum.records:
+        plot_record(rec, outdir, join_ends=False, normalize_dirs=False)

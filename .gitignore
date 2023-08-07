@@ -3,3 +3,8 @@ __pycache__/*
 *__pycache__
 venv
 *.log
+*~
+*.pyc
+.DS_Store
+/dist/
+/build/

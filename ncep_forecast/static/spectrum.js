@@ -21,7 +21,7 @@ function findTEXt(buf) {
 
 async function getHsFromImage(image) {
     let reader = new Promise((resolve, reject) => {
-        var fr = new FileReader();  
+        var fr = new FileReader();
         fr.onload = () => resolve(fr.result);
         fr.readAsArrayBuffer(image);
     });
@@ -36,7 +36,7 @@ async function getHsFromImage(image) {
  */
 class ForecastPlayer {
 
-    constructor(station, image_id, date_id, hs_id) {
+    constructor(station) {
         this.station = station;
         this.forecasts = {};
         this.hs = {};
@@ -45,19 +45,23 @@ class ForecastPlayer {
         this.period = 100;
         this.fctime_index = 0;
 
-        this.image_id = image_id;
-        this.date_id = date_id;
-        this.hs_id = hs_id;
-        this.img_el = null;
-
         this.latest_forecast = null;
         this.newDataTimer = setInterval(() => this.checkForNewData(), 60000);
 
         this.mouse_on = null;
         this.shifted = false;
+        this.fetching = false
     }
 
-    async init() {
+    async init(image_id, date_id, hs_id, container_id) {
+        this.image = document.getElementById(image_id)
+        this.image.ondragstart = () => { return false; }
+        // this.image.ontouchstart = this.image.onclick;
+
+        this.date = document.getElementById(date_id)
+        this.hs = document.getElementById(hs_id)
+        this.container = document.getElementById(container_id)
+
         this.fctimes = await this.getLatestForecastTimes();
     }
 
@@ -71,7 +75,7 @@ class ForecastPlayer {
     }
 
     /* Returns the latest forecast times
-     */ 
+     */
     async getLatestForecastTimes() {
         if (this.forecast_times === null) {
             await this.fetchLatestForecastTimes();
@@ -96,20 +100,29 @@ class ForecastPlayer {
         }
     }
 
+    async fetchForecasts() {
+        if (!this.fetching) {
+            this.fetching = true
+            for (let i=0; i<this.fctimes.length; i++) {
+                const fctime = this.fctimes[i]
+                const response = await fetch(`/forecast/${this.station}/${fctime}`);
+                if (response.ok) {
+                    // Get the image and create a url
+                    let image = await response.blob();
+                    this.forecasts[fctime] = window.URL.createObjectURL(image);
+                    this.hs[fctime] = await getHsFromImage(image);  // Get significant wave height
+                }
+            }
+            this.fetching = false
+        }
+    }
+
     /* Gets the forecast image for the given forecast time
      */
     async getForecast(fc_time) {
         if (!(fc_time in this.forecasts)) {
-            const response = await fetch(`/forecast/${this.station}/${fc_time}`);
-            
-            if (response.ok) {
-                // Get the image and create a url
-                let image = await response.blob();
-                this.forecasts[fc_time] = window.URL.createObjectURL(image);
-
-                let hs = await getHsFromImage(image);  // Get significant wave height
-                this.hs[fc_time] = hs;
-            }
+            this.fetchForecasts()
+            return null
         }
         return [this.forecasts[fc_time], this.hs[fc_time]];
     }
@@ -155,12 +168,9 @@ class ForecastPlayer {
     }
 
     /* Plays all of the forecasts in a loop
-     * 
-     * \param image_id The id for the image element
      */
     async play() {
         if (this.run) {
-            console.log("already playing");
             return;
         }
         this.run = true;
@@ -181,23 +191,26 @@ class ForecastPlayer {
         fct_i = Math.min(fct_i, this.fctimes.length - 1);
         fct_i = Math.max(fct_i, 0);
 
-        let fct = this.fctimes[fct_i];
-        let date_elem = document.getElementById(this.date_id);
-        let hs_elem = document.getElementById(this.hs_id);
+        const fct = this.fctimes[fct_i];
 
-        let [img_url, hs] = await this.getForecast(fct);  // Get the image
-        document.getElementById(this.image_id).src = img_url;
+        // Try to get the image & move on if we can't
+        const forecast = await this.getForecast(fct);
+        if (!forecast) return
+
+        const [img_url, hs] = forecast
+
+        this.image.src = img_url;
 
         // Create date from forecast time
-        let y = parseInt(fct.slice(0, 4));
-        let m = parseInt(fct.slice(4, 6)) - 1;
-        let d = parseInt(fct.slice(6, 8));
-        let h = parseInt(fct.slice(8));
-        let date = new Date(y, m, d, h);
+        const y = parseInt(fct.slice(0, 4));
+        const m = parseInt(fct.slice(4, 6)) - 1;
+        const d = parseInt(fct.slice(6, 8));
+        const h = parseInt(fct.slice(8));
+        const date = new Date(y, m, d, h);
 
         // Write header
-        date_elem.innerText = `${date.toDateString()} ${date.getHours()}:00`;
-        hs_elem.innerText = `${hs.toFixed(2)}m`;
+        this.date.innerText = `${date.toDateString()} ${date.getHours()}:00`;
+        this.hs.innerText = `${hs.toFixed(2)}m`;
     }
 
     setUpSpecAnimation() {
@@ -205,7 +218,7 @@ class ForecastPlayer {
         this.fakeScroll.className = 'fake-scroll';
         document.body.appendChild(this.fakeScroll);
 
-        let container = document.getElementById("spec-container");
+        // let container = document.getElementById("spec-container");
 
         // Set `height` for the fake scroll element
         this.scroll_height = 10 * this.forecast_times.length;
@@ -227,6 +240,9 @@ class ForecastPlayer {
             break;
         case "keyup":
             this.handleKeyUpEvent(event);
+            break;
+        case "click":
+            this.toggle()
             break;
         case "mouseover":
             this.mouse_on = target;
@@ -250,7 +266,6 @@ class ForecastPlayer {
             if (this.mouse_on == document.getElementById("spectrum")) {
                 this.fctime_index = Math.floor((this.scroll_height - window.scrollY) / 10);
                 this.updateSpectrum(this.fctime_index);
-                console.log(`height: ${this.scroll_height}, scrollY: ${window.scrollY}, index: ${this.fctime_index}`);
             }
         }
     }
