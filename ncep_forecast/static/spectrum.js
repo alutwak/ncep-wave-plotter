@@ -21,7 +21,7 @@ function findTEXt(buf) {
 
 async function getHsFromImage(image) {
     let reader = new Promise((resolve, reject) => {
-        var fr = new FileReader();  
+        var fr = new FileReader();
         fr.onload = () => resolve(fr.result);
         fr.readAsArrayBuffer(image);
     });
@@ -36,7 +36,7 @@ async function getHsFromImage(image) {
  */
 class ForecastPlayer {
 
-    constructor(station, image_id, date_id, hs_id) {
+    constructor(station) {
         this.station = station;
         this.forecasts = {};
         this.hs = {};
@@ -44,11 +44,6 @@ class ForecastPlayer {
         this.run = false;
         this.period = 100;
         this.fctime_index = 0;
-
-        this.image_id = image_id;
-        this.date_id = date_id;
-        this.hs_id = hs_id;
-        this.img_el = null;
 
         this.latest_forecast = null;
         this.newDataTimer = setInterval(() => this.checkForNewData(), 60000);
@@ -58,7 +53,15 @@ class ForecastPlayer {
         this.fetching = false
     }
 
-    async init() {
+    async init(image_id, date_id, hs_id, container_id) {
+        this.image = document.getElementById(image_id)
+        this.image.ondragstart = () => { return false; }
+        // this.image.ontouchstart = this.image.onclick;
+
+        this.date = document.getElementById(date_id)
+        this.hs = document.getElementById(hs_id)
+        this.container = document.getElementById(container_id)
+
         this.fctimes = await this.getLatestForecastTimes();
     }
 
@@ -72,7 +75,7 @@ class ForecastPlayer {
     }
 
     /* Returns the latest forecast times
-     */ 
+     */
     async getLatestForecastTimes() {
         if (this.forecast_times === null) {
             await this.fetchLatestForecastTimes();
@@ -165,12 +168,9 @@ class ForecastPlayer {
     }
 
     /* Plays all of the forecasts in a loop
-     * 
-     * \param image_id The id for the image element
      */
     async play() {
         if (this.run) {
-            console.log("already playing");
             return;
         }
         this.run = true;
@@ -199,10 +199,7 @@ class ForecastPlayer {
 
         const [img_url, hs] = forecast
 
-        const date_elem = document.getElementById(this.date_id);
-        const hs_elem = document.getElementById(this.hs_id);
-
-        document.getElementById(this.image_id).src = img_url;
+        this.image.src = img_url;
 
         // Create date from forecast time
         const y = parseInt(fct.slice(0, 4));
@@ -212,8 +209,8 @@ class ForecastPlayer {
         const date = new Date(y, m, d, h);
 
         // Write header
-        date_elem.innerText = `${date.toDateString()} ${date.getHours()}:00`;
-        hs_elem.innerText = `${hs.toFixed(2)}m`;
+        this.date.innerText = `${date.toDateString()} ${date.getHours()}:00`;
+        this.hs.innerText = `${hs.toFixed(2)}m`;
     }
 
     setUpSpecAnimation() {
@@ -221,7 +218,7 @@ class ForecastPlayer {
         this.fakeScroll.className = 'fake-scroll';
         document.body.appendChild(this.fakeScroll);
 
-        let container = document.getElementById("spec-container");
+        // let container = document.getElementById("spec-container");
 
         // Set `height` for the fake scroll element
         this.scroll_height = 10 * this.forecast_times.length;
@@ -243,6 +240,9 @@ class ForecastPlayer {
             break;
         case "keyup":
             this.handleKeyUpEvent(event);
+            break;
+        case "click":
+            this.toggle()
             break;
         case "mouseover":
             this.mouse_on = target;
@@ -266,7 +266,6 @@ class ForecastPlayer {
             if (this.mouse_on == document.getElementById("spectrum")) {
                 this.fctime_index = Math.floor((this.scroll_height - window.scrollY) / 10);
                 this.updateSpectrum(this.fctime_index);
-                console.log(`height: ${this.scroll_height}, scrollY: ${window.scrollY}, index: ${this.fctime_index}`);
             }
         }
     }
