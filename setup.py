@@ -14,7 +14,7 @@ setup(
     ],
     entry_points={
         "console_scripts": [
-            "ncep-wave-plotter=ncep_wave_plotter:main"
+            "ncep-wave-plotter=ncep_wave_plotter.ncep_wave_plotter:main"
         ]
     }
 )
