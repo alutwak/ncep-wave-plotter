@@ -15,8 +15,9 @@ The `ncep-wave-plotter` requires Python 3.6 or later, along with the following p
 I'll write a decent install script at some point, but for right now, these commands should work:
 
 ```shell
-python3 -m venv nwp-venv
-source nwp-venv/bin/activate
+python3 -m pip install virtualenv
+virtualenv .wave-env
+source .wave-env/bin/activate
 cd <ncep-wave-plotter directory>
 pip install .
 ```

@@ -2,14 +2,14 @@
 Description=NCEP Wave Forecast Server
 
 [Service]
-ExecStart=/usr/local/bin/twistd \
+ExecStart=<path-to-ncep-wave-plotter>/.wave-env/bin/twistd \
     --nodaemon \
     --pidfile= \
-    web --listen systemd:domain=INET:index=0 --wsgi ncep_forecast.app
+    web --listen systemd:domain=INET:name=ncep-forecast.socket --wsgi ncep_forecast.app
         
 NonBlocking=true
 
-WorkingDirectory=/home/wave/ncep-forecast
+WorkingDirectory=/home/wave/
 
 User=wave
 Group=wave
