@@ -10,8 +10,10 @@ from .cache import make_forecast_path, set_latest_forecast, clean_up_cache
 
 
 def make_forcast(station, outdir):
+    term.message(f"Generating forecast for station: {station}")
     this_hour = time.localtime()
-    forecast_dir = make_forecast_path(station, forecast_time=this_hour, cache=outdir)
+    forecast_dir = make_forecast_path(
+        station, forecast_time=this_hour, cache=outdir)
     latest_spec = fetch_latest_spectral_data()
     if latest_spec is None:
         term.message("Forecast failed")

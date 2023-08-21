@@ -24,6 +24,7 @@ def main():
 
         if args.station:
             stations = [args.station]
+            term.message(f"station: {args.station}")
         elif args.config:
             config_path = os.path.expanduser(args.config)
             if not os.path.exists(config_path):
@@ -36,7 +37,6 @@ def main():
             parser.print_help()
             sys.exit(1)
 
-        term.message("Generating forecast")
         for station in stations:
             make_forcast(station, outdir)
     if args.action == "plot-binary":
