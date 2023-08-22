@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 import ncep_wave.terminal as term
-from .cache import create_spectrum_path
+from .cache import create_spectrum_image_path
 
 
 def write_hs_into_png(pngdata, hs):
@@ -83,7 +83,7 @@ def plot_record(record, outdir=".", join_ends=True, normalize_dirs=True, for_web
     write_hs_into_png(png, record.hs)
 
     # Save and close figure
-    outpath = create_spectrum_path(outdir, localtime)
+    outpath = create_spectrum_image_path(outdir, localtime)
     with open(outpath, "wb") as f:
         f.write(png.getbuffer())
     plt.close(fig)

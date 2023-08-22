@@ -6,14 +6,13 @@ import ncep_wave.terminal as term
 from .data import fetch_latest_spectral_data
 from .spectrum import Spectrum
 from .plotter import plot_record
-from .cache import make_forecast_path, set_latest_forecast, clean_up_cache
+from .cache import Cache
 
 
-def make_forcast(station, outdir):
-    term.message(f"Generating forecast for station: {station}")
+def make_forecast(station: str, name: str, cache: Cache):
+    term.message(f"Generating forecast for station: {station}{(name if name else None)}")
     this_hour = time.localtime()
-    forecast_dir = make_forecast_path(
-        station, forecast_time=this_hour, cache=outdir)
+    forecast_dir = cache.forecast_path(station, forecast_time=this_hour)
     latest_spec = fetch_latest_spectral_data()
     if latest_spec is None:
         term.message("Forecast failed")
@@ -28,11 +27,10 @@ def make_forcast(station, outdir):
     for rec in spectrum.records:
         plot_record(rec, forecast_dir)
 
-    set_latest_forecast(station, this_hour, cache=outdir)
-    clean_up_cache(cache=outdir)
+    cache.update_index(station, this_hour, name)
 
 
-def plot_binary_data(outdir, path=None):
+def plot_binary_data(outdir: str, path: str = None):
     if path:
         fspec = open(path, "rb")
     else:
