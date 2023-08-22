@@ -1,19 +1,26 @@
+import os
+
 from flask import Flask, render_template, abort, send_file
 
 from ncep_wave.cache import (
-    get_latest_forecast,
-    get_spectrum_time,
-    get_latest_forecast_run_time,
+    Cache,
+    DEFAULT_CACHE
 )
+
+CACHE_ENV = "NCEP_FORECAST_CACHE"
 
 
 def create_app():
     app = Flask(__name__, instance_relative_config=True)
     app.config.from_mapping(SECRET_KEY="dev", TESTING=True)
 
+    cache_path = os.environ[CACHE_ENV] if CACHE_ENV in os.environ else DEFAULT_CACHE
+    cache = Cache(cache_path, auto_clean=False)
+    print(f"cache: {cache._index._index}")
+
     @app.route("/")
     def index():
-        return render_template("index.html")
+        return render_template("index.html", stations=cache.stations)
 
     @app.route("/forecast/<station>")
     def station(station):
@@ -21,22 +28,22 @@ def create_app():
 
     @app.route("/latest/<station>")
     def get_latest_forecast_run(station):
-        latest = get_latest_forecast_run_time(station)
+        latest = cache.get_latest_forecast_run_time(station)
         if latest is None:
             abort(404, f"No forecast available for station {station}")
         return {station: latest}
 
     @app.route("/forecast/times/<station>")
     def get_latest_forecast_times(station):
-        spectrums = get_latest_forecast(station)
-        if spectrums is None:
+        spectrum_times = cache.latest_forecast_times(station)
+        if spectrum_times is None:
             abort(404, f"No forecast available for station {station}")
-        times = [get_spectrum_time(spec) for spec in spectrums]
-        return {station: times}
+        print(f"times: {spectrum_times}")
+        return {station: spectrum_times}
 
     @app.route("/forecast/<station>/<fc_time>")
     def get_forecast(station, fc_time):
-        spectrums = get_latest_forecast(station)
+        spectrums = cache.get_latest_forecast(station)
         if spectrums is None:
             abort(404, f"No forecast available for {station} station")
         for spec in spectrums:

@@ -2,4 +2,9 @@
 <title>NCEP Wave Forecaster</title>
 <body>
 We forecast waves!!!
+<ul>
+{% for station, data in stations.items() %}
+    <li><a href="forecast/{{station}}">{{data["name"]}}</a></li>
+{% endfor %}
+</ul>
 </body>
