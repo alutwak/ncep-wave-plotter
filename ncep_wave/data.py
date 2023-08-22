@@ -87,7 +87,7 @@ class NCEPWaveDataFetcher:
     def latest_spectrals(self):
         return self.latest_station_file(STATION_FILE.SPECTRAL)
 
-    def fetch_latest_spectrals(self, cache=DEFAULT_CACHE):
+    def fetch_latest_spectrals(self, cache=DEFAULT_CACHE, remove_tar=True):
         # Get the target data, the output dirname and the output path
         target_tar = self.latest_spectrals()
         if target_tar is None:
@@ -97,6 +97,7 @@ class NCEPWaveDataFetcher:
         output_path, _ = os.path.splitext(output_tar)
 
         # If the output path already exists then we're done
+        # TODO: Deal with case where tar file was only partially extracted
         if os.path.exists(output_path):
             term.message(f"Found latest spectral run: {output_path}")
             return output_path
@@ -112,6 +113,8 @@ class NCEPWaveDataFetcher:
         tf = tarfile.open(output_tar)
         tf.extractall(output_path)
         tf.close()
+        if remove_tar:
+            os.remove(output_tar)
 
         return output_path
 

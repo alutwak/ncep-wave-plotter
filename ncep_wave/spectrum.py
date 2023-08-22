@@ -36,7 +36,7 @@ class Spectrum:
     ndirs = None
     freqs = None
     dirs = None
-    records = None
+    # records = None
 
     class Record:
 
