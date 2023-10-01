@@ -39,7 +39,7 @@ def main():
             parser.print_help()
             sys.exit(1)
 
-        cache = Cache(outdir)
+        cache = Cache(path=outdir, auto_clean=stations)
 
         for station, name in stations.items():
             make_forecast(station, name, cache)

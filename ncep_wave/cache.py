@@ -44,10 +44,14 @@ class Cache:
             if self._updated:
                 # Only write if we've actually created an index
                 with open(self._path, "w") as f:
-                    json.dump(self._index, f)
+                    json.dump(self._index, f, indent=2)
+
+        @property
+        def stations(self):
+            return list(self._index.keys())
 
         def update_station(self, station, forecast_time, name=None):
-            forecast_time = time.strftime(FORECAST_TIMESPEC, forecast_time)
+            forecast_time = Cache._strftime(forecast_time)
             if station in self._index:
                 self._index[station]["latest"] = forecast_time
             else:
@@ -68,25 +72,36 @@ class Cache:
             except KeyError:
                 return None
 
+        def clean(self, stations_to_keep):
+            for station in self.stations:
+                if station not in stations_to_keep:
+                    self._index.pop(station)
+
         @property
-        def stations(self):
+        def index(self):
             return self._index
 
-    def __init__(self, path=DEFAULT_CACHE, auto_clean=True):
+    def __init__(self, path=DEFAULT_CACHE, auto_clean=None):
         self._path = path
         self._index = Cache.Index(os.path.join(path, "index.json"))
         self._image_cache = os.path.join(path, "forecast")
+        self._auto_clean = auto_clean
 
     def __del__(self):
-        self.clean()
+        if self._auto_clean:
+            self.clean()
+
+    @property
+    def path(self):
+        return self._path
 
     @property
     def image_cache(self):
         return self._image_cache
 
     @property
-    def stations(self):
-        return self._index.stations
+    def station_data(self):
+        return self._index.index
 
     @staticmethod
     def _strftime(t=None):
@@ -167,14 +182,33 @@ class Cache:
                 term.message(f"Removing old data directory {od}")
                 shutil.rmtree(od, ignore_errors=True)
         if old_runs is not None:
-            for run in old_runs[:-1]:
+            for run in old_runs:
                 term.message(f"Removing old run directory {run}")
                 shutil.rmtree(run, ignore_errors=True)
 
         # Clean up the image cache
+        print(f"auto clean? {self._auto_clean}")
+        if isinstance(self._auto_clean, (list, set)):
+            keep_stations = self._auto_clean
+        elif isinstance(self._auto_clean, dict):
+            keep_stations = self._auto_clean.keys()
+        else:
+            keep_stations = self._index.stations
+
+        print(f"keeping stations: {keep_stations}")
+
         station_caches = glob.glob(os.path.join(self.image_cache, "*"))
         for station in station_caches:
-            forecasts = sorted(glob.glob(os.path.join(station, "*")))
-            for forecast in forecasts[:-1]:
-                term.message(f"Removing old forecast {forecast}")
-                shutil.rmtree(forecast, ignore_errors=True)
+            if os.path.basename(station) in keep_stations:
+                # Remove all but the most recent forecast
+                forecasts = sorted(glob.glob(os.path.join(station, "*")))
+                for forecast in forecasts[:-1]:
+                    term.message(f"Removing old forecast {forecast}")
+                    shutil.rmtree(forecast, ignore_errors=True)
+            else:
+                # Remove the whole folder
+                print(f"Removing station: {station}")
+                shutil.rmtree(station)
+
+        # Clean up index
+        self._index.clean(keep_stations)

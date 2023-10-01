@@ -20,7 +20,7 @@ def create_app():
 
     @app.route("/")
     def index():
-        return render_template("index.html", stations=cache.stations)
+        return render_template("index.html", stations=cache.station_data)
 
     @app.route("/forecast/<station>")
     def station(station):

@@ -13,7 +13,7 @@ def make_forecast(station: str, name: str, cache: Cache):
     term.message(f"Generating forecast for station: {station}{(name if name else None)}")
     this_hour = time.localtime()
     forecast_dir = cache.forecast_path(station, forecast_time=this_hour)
-    latest_spec = fetch_latest_spectral_data()
+    latest_spec = fetch_latest_spectral_data(cache.path)
     if latest_spec is None:
         term.message("Forecast failed")
         return
