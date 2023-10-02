@@ -6,15 +6,14 @@ ExecStart=<path-to-ncep-wave-plotter>/.wave-env/bin/twistd \
     --nodaemon \
     --pidfile= \
     web --listen systemd:domain=INET:name=ncep-forecast.socket --wsgi ncep_forecast.app
-        
+
+Environment="NCEP_FORECAST_CONFIG=/Users/ayal/Documents/Surf/ncep-wave-plotter/config.yml"
+# Environment="NCEP_FORECAST_CACHE=/Users/ayal/Documents/Surf/ncep-wave-plotter/stations"
+
 NonBlocking=true
-
 WorkingDirectory=/home/wave/
-
 User=wave
 Group=wave
-
-
 Restart=always
 
 # [Install]

@@ -15,11 +15,13 @@ def create_app():
     app.config.from_mapping(SECRET_KEY="dev", TESTING=True)
 
     cache_path = os.environ[CACHE_ENV] if CACHE_ENV in os.environ else DEFAULT_CACHE
-    cache = Cache(cache_path, auto_clean=False)
+    cache = Cache(cache_path, auto_clean=False, read_only=True)
     print(f"cache: {cache._index._index}")
 
     @app.route("/")
     def index():
+        cache.refresh()
+        print(f"stations: {cache.station_data}")
         return render_template("index.html", stations=cache.station_data)
 
     @app.route("/forecast/<station>")

@@ -25,13 +25,15 @@ class Cache:
 
     class Index:
 
-        def __init__(self, path):
+        def __init__(self, path, read_only=False):
             self._path = path
             self._updated = False
+            self._read_only = read_only
             self._read()
 
         def __del__(self):
-            self._write()
+            if not self._read_only:
+                self._write()
 
         def _read(self):
             if os.path.exists(self._path):
@@ -41,7 +43,7 @@ class Cache:
                 self._index = {}
 
         def _write(self):
-            if self._updated:
+            if self._updated and not self._read_only:
                 # Only write if we've actually created an index
                 with open(self._path, "w") as f:
                     json.dump(self._index, f, indent=2)
@@ -81,11 +83,12 @@ class Cache:
         def index(self):
             return self._index
 
-    def __init__(self, path=DEFAULT_CACHE, auto_clean=None):
+    def __init__(self, path=DEFAULT_CACHE, auto_clean=None, read_only=False):
         self._path = path
-        self._index = Cache.Index(os.path.join(path, "index.json"))
         self._image_cache = os.path.join(path, "forecast")
         self._auto_clean = auto_clean
+        self._read_only = read_only
+        self.refresh()
 
     def __del__(self):
         if self._auto_clean:
@@ -124,6 +127,10 @@ class Cache:
             "name": station_name,
             "latest": Cache._strftime(forecast_time)
         }
+
+    def refresh(self):
+        self._index = Cache.Index(os.path.join(self._path, "index.json"),
+                                  read_only=self._read_only)
 
     def forecast_path(self, station, forecast_time=None):
         forecast_time = Cache._strftime(forecast_time)
