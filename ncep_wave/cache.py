@@ -52,7 +52,8 @@ class Cache:
         def stations(self):
             return list(self._index.keys())
 
-        def update_station(self, station, forecast_time, name=None):
+        def update_station(self, station, forecast_time,
+                           name: str = None, location: (float, float) = None):
             forecast_time = Cache._strftime(forecast_time)
             if station in self._index:
                 self._index[station]["latest"] = forecast_time
@@ -60,6 +61,9 @@ class Cache:
                 self._index[station] = {"latest": forecast_time}
             if name is not None:
                 self._index[station]["name"] = name
+            if location is not None:
+                self._index[station]["lat"] = location[0]
+                self._index[station]["lon"] = location[1]
             self._updated = True
 
         def latest(self, station):
@@ -142,8 +146,9 @@ class Cache:
             time.localtime(forecast_time)
         )
 
-    def update_index(self, station, forecast_time, name=None):
-        self._index.update_station(station, forecast_time, name)
+    def update_index(self, station, forecast_time,
+                     name: str = None, location: (float, float) = None):
+        self._index.update_station(station, forecast_time, name, location)
 
     def get_latest_forecast_run_time(self, station):
         return self._index.latest(station)

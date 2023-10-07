@@ -83,6 +83,7 @@ class Spectrum:
         self._records = []
         self._parse_header()
 
+    @property
     def location(self):
         """ Returns the location of the station
         """
@@ -92,6 +93,7 @@ class Spectrum:
             record = self._records[0]
         return record.lat, record.lon
 
+    @property
     def station(self):
         if len(self._records) == 0:
             record = next(self.records)

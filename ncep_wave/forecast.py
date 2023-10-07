@@ -10,7 +10,7 @@ from .cache import Cache
 
 
 def make_forecast(station: str, name: str, cache: Cache):
-    term.message(f"Generating forecast for station: {station}{(name if name else None)}")
+    term.message(f"Generating forecast for station: {station}: {(name if name else None)}")
     this_hour = time.localtime()
     forecast_dir = cache.forecast_path(station, forecast_time=this_hour)
     latest_spec = fetch_latest_spectral_data(cache.path)
@@ -27,7 +27,7 @@ def make_forecast(station: str, name: str, cache: Cache):
     for rec in spectrum.records:
         plot_record(rec, forecast_dir)
 
-    cache.update_index(station, this_hour, name)
+    cache.update_index(station, this_hour, name, spectrum.location)
 
 
 def plot_binary_data(outdir: str, path: str = None):

@@ -4,7 +4,12 @@
 We forecast waves!!!
 <ul>
 {% for station, data in stations.items() %}
-    <li><a href="forecast/{{station}}">{{data["name"]}}</a></li>
+    <li><a href="forecast/{{station}}">{{data.name}}</a>
+        {% if data.lon is defined %}
+        -- <a href="https://www.google.com/maps/place/{{data.lat}},{{data.lon}}/@{{data.lat}},{{data.lon}},10z">
+            ({{data.lat}}, {{data.lon}})
+           </a></li>
+        {% endif %}
 {% endfor %}
 </ul>
 </body>
