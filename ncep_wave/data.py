@@ -1,12 +1,12 @@
-import os
-import sys
-import socket
 import enum
-
-from ftplib import FTP_TLS
+import os
+import socket
+import sys
 import tarfile
+from ftplib import FTP_TLS, error_temp
 
 import ncep_wave.terminal as term
+
 from .cache import DEFAULT_CACHE
 
 NCEP_SERVER = "ftpprd.ncep.noaa.gov"
@@ -53,7 +53,7 @@ class NCEPWaveDataFetcher:
 
     @property
     def gfs_dirs(self):
-        return [f for f in self.ftp.nlst() if "gfs." in f]
+        return sorted([f for f in self.ftp.nlst() if "gfs." in f])
 
     def gfs_runs(self, gfs_dir):
         """ Returns a dictionary of available gfs runs available in the given gfs dir.
@@ -78,7 +78,11 @@ class NCEPWaveDataFetcher:
         # Iterate from the end
         for gdir in self.gfs_dirs[::-1]:
             for run in self.gfs_runs(gdir)[::-1]:
-                sfiles = self.gfs_station_files(run)
+                try:
+                    sfiles = self.gfs_station_files(run)
+                except error_temp:
+                    # Likely, this means that the /wave/station/ directory doesn't exist yet
+                    continue
                 for f in sfiles:
                     if file_type.value in f:
                         return f
