@@ -84,7 +84,9 @@ class NCEPWaveDataFetcher:
                     # Likely, this means that the /wave/station/ directory doesn't exist yet
                     continue
                 for f in sfiles:
+                    print(f"found file: {f}")
                     if file_type.value in f:
+                        print(f"returning: {f}")
                         return f
         return None
 
